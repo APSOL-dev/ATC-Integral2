@@ -31,15 +31,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Root endpoint
-app.get('/', (req, res) => {
-  res.json({
-    name: 'API ATC Migración',
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    health: '/api/health'
-  });
-});
+const path = require('path');
+const fs = require('fs');
+const clientDistPath = [
+  path.join(__dirname, '../client-dist'),
+  path.join(__dirname, '../../client/dist'),
+  path.join(__dirname, '../dist')
+].find(p => fs.existsSync(p));
 
 // Health check with live database connectivity status
 app.get('/api/health', async (req, res) => {
@@ -79,12 +77,8 @@ app.use('/api/pedidos',   require('./routes/pedidos.routes'));
 app.use('/api/usuarios',  require('./routes/usuarios.routes'));
 app.use('/api/tablero',   require('./routes/tablero.routes'));
 
-// Serve static frontend files in production if client-dist folder exists
-const path = require('path');
-const fs = require('fs');
-const clientDistPath = path.join(__dirname, '../client-dist');
-
-if (fs.existsSync(clientDistPath)) {
+// Serve static frontend files in production if client build exists
+if (clientDistPath) {
   app.use(express.static(clientDistPath));
   
   // For any non-API route, send index.html for React SPA routing
@@ -93,6 +87,16 @@ if (fs.existsSync(clientDistPath)) {
       return next();
     }
     res.sendFile(path.join(clientDistPath, 'index.html'));
+  });
+} else {
+  // Root endpoint info (only if static frontend is not present)
+  app.get('/', (req, res) => {
+    res.json({
+      name: 'API ATC Migración',
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      health: '/api/health'
+    });
   });
 }
 
