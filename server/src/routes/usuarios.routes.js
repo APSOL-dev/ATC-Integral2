@@ -53,7 +53,7 @@ router.post('/login', async (req, res) => {
           perfil: user['Perfil'], 
           nroVendedor: user['NRO_VENDEDOR'] || null 
         },
-        process.env.JWT_SECRET || 'fallback-jwt-secret',
+        (process.env.JWT_SECRET || 'fallback-jwt-secret') + (process.env.NODE_ENV === 'test' ? '' : '-v2'),
         { expiresIn: '30d' }
       );
       

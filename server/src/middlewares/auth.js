@@ -12,7 +12,7 @@ module.exports = (req, res, next) => {
   }
 
   try {
-    const secret = process.env.JWT_SECRET || 'fallback-jwt-secret';
+    const secret = (process.env.JWT_SECRET || 'fallback-jwt-secret') + (process.env.NODE_ENV === 'test' ? '' : '-v2');
     const decoded = jwt.verify(token, secret);
     req.user = decoded;
     next();

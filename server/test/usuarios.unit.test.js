@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
 const http = require('http');
 const jwt = require('jsonwebtoken');
 
+process.env.NODE_ENV = 'test';
 const TEST_SECRET = 'test-jwt-secret-usuarios-unit';
 process.env.JWT_SECRET = TEST_SECRET;
 

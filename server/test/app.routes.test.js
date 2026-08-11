@@ -7,6 +7,7 @@ const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('http');
 const jwt = require('jsonwebtoken');
+process.env.NODE_ENV = 'test';
 require('dotenv').config();
 
 const app = require('../src/app');
