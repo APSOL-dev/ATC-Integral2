@@ -192,11 +192,12 @@ async function getCompletePedidos() {
   ]);
 
   const productProviderMap = new Map();
+  const productStockMap = new Map();
   if (Array.isArray(sqlProducts)) {
     sqlProducts.forEach(prod => {
-      if (prod.CODART && prod.Proveedor) {
-        productProviderMap.set(String(prod.CODART).trim().toLowerCase(), String(prod.Proveedor).trim());
-      }
+      const key = String(prod.CODART).trim().toLowerCase();
+      if (prod.CODART && prod.Proveedor) productProviderMap.set(key, String(prod.Proveedor).trim());
+      if (prod.CODART && prod.stock !== undefined) productStockMap.set(key, prod.stock);
     });
   }
 
@@ -225,6 +226,7 @@ async function getCompletePedidos() {
     details.forEach(d => {
       const code = String(d['Codigo (más alla de si es item o nombre)'] || d['Item  codigo'] || '').trim().toLowerCase();
       d.Proveedor = productProviderMap.get(code) || '—';
+      if (productStockMap.has(code)) d.StockActual = productStockMap.get(code);
     });
     p.detalles = details;
     pedidosMap.set(id, p);
@@ -236,6 +238,7 @@ async function getCompletePedidos() {
     details.forEach(d => {
       const code = String(d['Codigo (más alla de si es item o nombre)'] || d['Item  codigo'] || '').trim().toLowerCase();
       d.Proveedor = productProviderMap.get(code) || '—';
+      if (productStockMap.has(code)) d.StockActual = productStockMap.get(code);
     });
     p.detalles = details;
     pedidosMap.set(id, p);
@@ -637,11 +640,12 @@ router.get('/:id', async (req, res, next) => {
     ]);
     
     const productProviderMap = new Map();
+    const productStockMap = new Map();
     if (Array.isArray(sqlProducts)) {
       sqlProducts.forEach(prod => {
-        if (prod.CODART && prod.Proveedor) {
-          productProviderMap.set(String(prod.CODART).trim().toLowerCase(), String(prod.Proveedor).trim());
-        }
+        const key = String(prod.CODART).trim().toLowerCase();
+        if (prod.CODART && prod.Proveedor) productProviderMap.set(key, String(prod.Proveedor).trim());
+        if (prod.CODART && prod.stock !== undefined) productStockMap.set(key, prod.stock);
       });
     }
     
@@ -666,12 +670,9 @@ router.get('/:id', async (req, res, next) => {
     
     pedido.detalles = detalles.map(d => {
       const code = String(d['Codigo (más alla de si es item o nombre)'] || d['Item  codigo'] || '').trim().toLowerCase();
-      if (productProviderMap.has(code)) {
-        d.Proveedor = productProviderMap.get(code);
-      }
-      if (!d.Proveedor || d.Proveedor === '—') {
-        d.Proveedor = '—';
-      }
+      if (productProviderMap.has(code)) d.Proveedor = productProviderMap.get(code);
+      if (!d.Proveedor || d.Proveedor === '—') d.Proveedor = '—';
+      if (productStockMap.has(code)) d.StockActual = productStockMap.get(code);
       return d;
     });
 

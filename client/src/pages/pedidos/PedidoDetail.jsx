@@ -555,6 +555,19 @@ export default function PedidoDetail() {
                 const itemMarca = item.Marca || item.MARCA || item.NombreMarca || ''
                 const title = (itemMarca && !itemName.toLowerCase().includes(itemMarca.toLowerCase())) ? `${itemName} - ${itemMarca}` : itemName
 
+                // Stock actual — solo mostrar en estados borrador (0 y 0.0)
+                const isBorrador = ['0', '0.', '0.0'].includes(String(pedido.Estado))
+                const stockActual = item.StockActual
+                const hasStock = isBorrador && stockActual !== undefined && stockActual !== null
+                const stockNum = hasStock ? Number(stockActual) : null
+                const stockColor = stockNum === null
+                  ? ''
+                  : stockNum >= qty
+                    ? 'bg-emerald-50 text-emerald-700'
+                    : stockNum > 0
+                      ? 'bg-amber-50 text-amber-700'
+                      : 'bg-red-50 text-red-600'
+
                 return (
                   <div 
                     key={idx} 
@@ -586,6 +599,14 @@ export default function PedidoDetail() {
                             {qty} uds
                           </span>
                         </div>
+                        {hasStock && (
+                          <div className="text-right">
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Stock actual</span>
+                            <span className={`inline-block font-bold text-xs px-2 py-0.5 rounded-lg tabular-nums ${stockColor}`}>
+                              {stockNum} uds
+                            </span>
+                          </div>
+                        )}
                         {hasPrep && (
                           <div className="text-right">
                             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Preparado</span>
