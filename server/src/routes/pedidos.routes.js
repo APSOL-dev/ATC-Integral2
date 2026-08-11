@@ -267,6 +267,8 @@ router.get('/', async (req, res, next) => {
       Observaciones: p.Observaciones,
       'Emitido por': p['Emitido por'],
       'Emitido por con fecha': p['Emitido por con fecha'],
+      'Emitido Fecha': p['Emitido Fecha'],
+      Fecha_Ultima_Modificacion: p.Fecha_Ultima_Modificacion,
       'Lugar de entrega': p['Lugar de entrega'],
       Total: p.Total,
       Estado: p.Estado,

@@ -586,7 +586,7 @@ export default function PedidosList() {
                       <td className="px-6 py-7">
                         <div className="flex items-center gap-2 text-xs font-bold text-slate-500">
                            <Clock size={12} className="text-slate-300" />
-                           {formatDateTime(pedido['Fecha y hora'])}
+                           {formatDateTime(pedido['Emitido Fecha'] || pedido['Fecha y hora'])}
                         </div>
                       </td>
                       <td className="px-6 py-7">

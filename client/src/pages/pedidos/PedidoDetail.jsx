@@ -422,7 +422,7 @@ export default function PedidoDetail() {
               )}
             </div>
             <p className="text-[#0f5da9] font-bold uppercase text-[10px] tracking-widest mt-1">
-              {pedido.Nombre || pedido['Razón social (NO BD)']} · {formatDate(pedido['Fecha y hora'])}
+              {pedido.Nombre || pedido['Razón social (NO BD)']} · {formatDateTime(emitidoFecha)}
             </p>
           </div>
         </div>
@@ -517,7 +517,7 @@ export default function PedidoDetail() {
                   <div className="flex items-center gap-2 text-right">
                     <div>
                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Última modificación</p>
-                      <p className="text-xs font-bold text-slate-500">{formatDate(ultimaModif)}</p>
+                      <p className="text-xs font-bold text-slate-500">{formatDateTime(ultimaModif)}</p>
                     </div>
                     <Calendar size={13} className="text-slate-300 ml-2" />
                   </div>
