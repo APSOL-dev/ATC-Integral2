@@ -317,7 +317,7 @@ router.post('/', (req, res, next) => {
           .filter(id => !isNaN(id) && id < 1000000);
         maxId = Math.max(...ids, 0);
       }
-      const newId = maxId < 100000 ? 100000 : maxId + 1;
+      const newId = maxId < 110000 ? 110000 : maxId + 1;
       
       const now = new Date();
       const emitidoPor = header['Emitido por'] || 'Admin';
