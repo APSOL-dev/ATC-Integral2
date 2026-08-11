@@ -67,9 +67,9 @@ describe('PedidoDetail: Bloqueo de Pedidos Temporales (#temp...)', () => {
     const btnAsignando = screen.getAllByRole('button', { name: /Generando pedido/i })[0]
     expect(btnAsignando).toBeDisabled()
 
-    // Los botones de Editar y Borrarlo deben estar deshabilitados
+    // Los botones de Editar y Borrar deben estar deshabilitados
     expect(screen.getAllByRole('button', { name: /Editar/i })[0]).toBeDisabled()
-    expect(screen.getAllByRole('button', { name: /Borrarlo/i })[0]).toBeDisabled()
+    expect(screen.getAllByRole('button', { name: /Borrar/i })[0]).toBeDisabled()
 
     // Intentar hacer clic no debe gatillar fetch PATCH
     fireEvent.click(btnAsignando)

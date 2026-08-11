@@ -104,8 +104,8 @@ describe('Permisos - Perfil Administracion', () => {
     expect(puedeDo('Administracion', 'pedidos', 'approve')).toBe(true)
   })
 
-  it('NO puede borrar pedidos pero SÍ puede anularlos (presupuestos 0.0)', () => {
-    expect(puedeDo('Administracion', 'pedidos', 'delete')).toBe(false)
+  it('puede borrar y anular pedidos', () => {
+    expect(puedeDo('Administracion', 'pedidos', 'delete')).toBe(true)
     expect(puedeDo('Administracion', 'pedidos', 'anular')).toBe(true)
   })
 
@@ -143,9 +143,9 @@ describe('Permisos - Perfil VendedorCalle', () => {
     expect(puedeDo('VendedorCalle', 'pedidos', 'approve')).toBe(true)
   })
 
-  it('NO puede cerrar ni anular pedidos', () => {
+  it('puede anular presupuestos (estado 0.0)', () => {
     expect(puedeDo('VendedorCalle', 'pedidos', 'close')).toBe(false)
-    expect(puedeDo('VendedorCalle', 'pedidos', 'anular')).toBe(false)
+    expect(puedeDo('VendedorCalle', 'pedidos', 'anular')).toBe(true)
   })
 
   it('NO puede leer pagos ni usuarios', () => {
@@ -182,9 +182,9 @@ describe('Permisos - Perfil SuperVendedor', () => {
     expect(puedeDo('SuperVendedor', 'pedidos', 'approve')).toBe(true)
   })
 
-  it('NO puede cerrar ni anular pedidos (igual que VendedorCalle)', () => {
+  it('puede anular presupuestos (estado 0.0)', () => {
     expect(puedeDo('SuperVendedor', 'pedidos', 'close')).toBe(false)
-    expect(puedeDo('SuperVendedor', 'pedidos', 'anular')).toBe(false)
+    expect(puedeDo('SuperVendedor', 'pedidos', 'anular')).toBe(true)
   })
 
   it('NO puede leer pagos ni usuarios', () => {

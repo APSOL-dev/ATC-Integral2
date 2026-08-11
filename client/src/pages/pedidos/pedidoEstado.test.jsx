@@ -147,7 +147,7 @@ describe('PedidoDetail — Cambio de Estado: Flujos de Administracion', () => {
 
     render(<PedidoDetail />)
 
-    const btnAnular = screen.getAllByRole('button', { name: /Anularlo/i })[0]
+    const btnAnular = screen.getAllByRole('button', { name: /Anular/i })[0]
     expect(btnAnular).toBeInTheDocument()
 
     fireEvent.click(btnAnular)
@@ -178,7 +178,7 @@ describe('PedidoDetail — Cambio de Estado: Flujos de Administracion', () => {
     render(<PedidoDetail />)
 
     expect(screen.queryByRole('button', { name: /Pedirlo/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Borrarlo/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Borrar/i })).not.toBeInTheDocument()
   })
 })
 
@@ -194,13 +194,13 @@ describe('PedidoDetail — Cambio de Estado: Restricciones de Deposito', () => {
     }
   })
 
-  it('Deposito NO ve botones de "Pedirlo", "Editar" ni "Borrarlo" para pedido en estado 0', () => {
+  it('Deposito NO ve botones de "Pedirlo", "Editar" ni "Borrar" para pedido en estado 0', () => {
     mockPedidosList = [buildPedido('0')]
     render(<PedidoDetail />)
 
     expect(screen.queryByRole('button', { name: /Pedirlo/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Editar/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Borrarlo/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Borrar/i })).not.toBeInTheDocument()
   })
 
   it('Deposito NO ve botones de acción para pedido en estado 1', () => {

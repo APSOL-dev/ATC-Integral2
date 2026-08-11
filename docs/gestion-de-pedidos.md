@@ -26,6 +26,11 @@ Permite la emisión, visualización y edición de los pedidos y presupuestos en 
   - *Verificado por:* [editStock.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/COPIA%20ATC%20Migraci%C3%B3n/client/src/pages/pedidos/editStock.test.jsx)
 - **Sección Consolidado del Formulario de Pedido:** En la columna de Consolidado (`PedidoForm.jsx`), las etiquetas y valores de Subtotal, Descuento y Monto Descontado incrementaron su tamaño visual 2 puntos e incorporan peso en negrita resaltado (`font-extrabold` / `font-black`).
 - **Visualización de Observaciones del Pedido:** Las notas u observaciones especificadas al crear o editar el pedido se presentan en una tarjeta destacada con icono de texto en el detalle del pedido (`/pedidos/:id`), se incluyen en el mensaje para compartir por WhatsApp y se imprimen formalmente en la vista/PDF del comprobante.
+- **Acciones de Borrado y Anulación por Estado y Perfil:**
+  - **En Estado 0 y 0.:** Se habilita el botón **"Borrar"** (elimina el pedido directamente del sistema).
+  - **En Estado 0.0:** Se habilita el botón **"Anular"** (cambia el estado del pedido a `0.0.99`).
+  - **Perfiles autorizados:** Vendedor Calle (sobre sus propios pedidos), Super Vendedor (sobre todos los pedidos) y Administración Operativa / Full (sobre todos los pedidos).
+  - *Verificado por:* [visibilidadAprobacion.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/COPIA%20ATC%20Migraci%C3%B3n/client/src/pages/pedidos/visibilidadAprobacion.test.jsx) y [pedidoEstado.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/COPIA%20ATC%20Migraci%C3%B3n/client/src/pages/pedidos/pedidoEstado.test.jsx)
 
 ### 3. Filtros de la Cartera de Pedidos
 - **Búsqueda por ID:** Permite filtrar y aislar un pedido escribiendo su identificador numérico (ID de pedido) en el campo de texto.

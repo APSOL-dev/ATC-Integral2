@@ -21,7 +21,7 @@ export const PERFILES = {
   Administracion: {
     label: 'Administración Operativa',
     sidebar: ['dashboard', 'pedidos', 'clientes', 'productos', 'presupuestos', 'pagos', 'saldos', 'usuarios', 'selector'],
-    pedidos: { create: true, edit: true, delete: false, approve: true, close: true, anular: true, presupuesto: true },
+    pedidos: { create: true, edit: true, delete: true, approve: true, close: true, anular: true, presupuesto: true },
     clientes: { read: true, edit: false },
     pagos: { read: true, create: true },
     usuarios: { read: true, edit: true },
@@ -30,7 +30,7 @@ export const PERFILES = {
   VendedorCalle: {
     label: 'Vendedor de Calle',
     sidebar: ['dashboard', 'pedidos', 'clientes', 'productos', 'presupuestos'],
-    pedidos: { create: true, edit: true, delete: true, approve: true, close: false, anular: false, presupuesto: false },
+    pedidos: { create: true, edit: true, delete: true, approve: true, close: false, anular: true, presupuesto: false },
     clientes: { read: true },
     pagos: { read: false },
     usuarios: { read: false },
@@ -39,7 +39,7 @@ export const PERFILES = {
   SuperVendedor: {
     label: 'Super Vendedor',
     sidebar: ['dashboard', 'pedidos', 'clientes', 'productos', 'presupuestos'],
-    pedidos: { create: true, edit: true, delete: true, approve: true, close: false, anular: false, presupuesto: true },
+    pedidos: { create: true, edit: true, delete: true, approve: true, close: false, anular: true, presupuesto: true },
     clientes: { read: true },
     pagos: { read: false },
     usuarios: { read: false },

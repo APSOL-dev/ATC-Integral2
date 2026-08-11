@@ -89,10 +89,10 @@ describe('PedidoDetail: Visibilidad de Aprobación, Edición y Borrado por Rol',
     // En estado 0, el vendedor debe ver los 3 botones de acción
     expect(screen.getAllByRole('button', { name: /Editar/i })[0]).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /Pedirlo/i })[0]).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /Borrarlo/i })[0]).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Borrar/i })[0]).toBeInTheDocument()
   })
 
-  it('Debería mostrar Editar, Pedirlo y Borrarlo al Super Vendedor si el pedido está en estado 0.0', async () => {
+  it('Debería mostrar Editar, Pedirlo y Anular al Super Vendedor si el pedido está en estado 0.0', async () => {
     mockCurrentUser = {
       nombre: 'Super Vendedor 1',
       perfil: 'SuperVendedor',
@@ -103,10 +103,10 @@ describe('PedidoDetail: Visibilidad de Aprobación, Edición y Borrado por Rol',
 
     render(<PedidoDetail />)
 
-    // En estado 0.0, el supervendedor debe ver los 3 botones (Editar, Pedirlo, Borrarlo)
+    // En estado 0.0, el supervendedor debe ver los 3 botones (Editar, Pedirlo, Anular)
     expect(screen.getAllByRole('button', { name: /Editar/i })[0]).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /Pedirlo/i })[0]).toBeInTheDocument()
-    expect(screen.getAllByRole('button', { name: /Borrarlo/i })[0]).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Anular/i })[0]).toBeInTheDocument()
   })
 
   it('Debería poder hacer PATCH a estado 1 al hacer clic en Pedirlo y confirmar el modal', async () => {
@@ -203,7 +203,7 @@ describe('PedidoDetail: Visibilidad de Aprobación, Edición y Borrado por Rol',
     expect(screen.getAllByRole('button', { name: /Editar/i })[0]).toBeInTheDocument()
   })
 
-  it('No debería mostrar ningún botón de acción (Editar, Pedirlo, Borrarlo) si el pedido ya está en estado 1', async () => {
+  it('No debería mostrar ningún botón de acción (Editar, Pedirlo, Borrar, Anular) si el pedido ya está en estado 1', async () => {
     mockCurrentUser = {
       nombre: 'Vendedor 1',
       perfil: 'VendedorCalle',
@@ -217,7 +217,7 @@ describe('PedidoDetail: Visibilidad de Aprobación, Edición y Borrado por Rol',
     // Los botones de acción no deben renderizarse
     expect(screen.queryByRole('button', { name: /Editar/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Pedirlo/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Borrarlo/i })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Anularlo/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Borrar/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Anular/i })).not.toBeInTheDocument()
   })
 })

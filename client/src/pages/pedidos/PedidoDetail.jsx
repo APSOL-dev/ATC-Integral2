@@ -697,25 +697,25 @@ export default function PedidoDetail() {
                     </button>
                   )}
 
-                  {/* Borrarlo solo en 0, 0. o 0.0 */}
-                  {['0', '0.', '0.0'].includes(String(pedido.Estado)) && canDelete && (
+                  {/* Borrar en estado 0 o 0. */}
+                  {['0', '0.'].includes(String(pedido.Estado)) && canDelete && (
                     <button
                       onClick={handleDeletePedido}
                       disabled={isSending || isTemp}
                       className="w-full text-slate-400 border border-slate-200 hover:border-red-200 hover:text-red-500 hover:bg-red-50 px-4 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
                     >
-                      <Trash2 size={14} /> Borrarlo
+                      <Trash2 size={14} /> Borrar
                     </button>
                   )}
 
-                  {/* Anularlo solo en 0.0 */}
+                  {/* Anular en estado 0.0 (pasa a 0.0.99) */}
                   {String(pedido.Estado) === '0.0' && canAnular && (
                     <button
                       onClick={() => handleUpdateEstado('0.0.99')}
                       disabled={isSending || isTemp}
                       className="w-full text-slate-400 border border-slate-200 hover:border-red-200 hover:text-red-500 hover:bg-red-50 px-4 py-2.5 rounded-xl font-bold text-[10px] uppercase tracking-wider transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
                     >
-                      <Ban size={14} /> Anularlo
+                      <Ban size={14} /> Anular
                     </button>
                   )}
                 </div>
