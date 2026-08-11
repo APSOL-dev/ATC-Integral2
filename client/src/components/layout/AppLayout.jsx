@@ -185,7 +185,7 @@ export default function AppLayout() {
             <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
 
             <div className="hidden md:flex flex-col items-end">
-              <span className="text-[10px] uppercase tracking-widest text-[#1e293b]/40 font-bold">Estado Servidor</span>
+              <span className="text-[10px] uppercase tracking-widest text-[#1e293b]/40 font-bold">Estado conexión</span>
               {serverHealth?.mssql && serverHealth?.supabase ? (
                 <span className="text-xs font-bold text-emerald-500 flex items-center gap-1.5" title="Conexión SQL Server y Supabase OK">
                   <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -194,12 +194,12 @@ export default function AppLayout() {
               ) : !serverHealth?.mssql ? (
                 <span className="text-xs font-bold text-red-500 flex items-center gap-1.5" title="Sin conexión a SQL Server (Requiere VPN/Red Local)">
                   <span className="size-1.5 rounded-full bg-red-500 animate-pulse" />
-                  Error SQL
+                  Error de servidor
                 </span>
               ) : (
-                <span className="text-xs font-bold text-amber-500 flex items-center gap-1.5" title="Sin conexión a Supabase">
-                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
-                  Degradado
+                <span className="text-xs font-bold text-red-500 flex items-center gap-1.5" title="Sin conexión a Supabase">
+                  <span className="size-1.5 rounded-full bg-red-500 animate-pulse" />
+                  Error interno
                 </span>
               )}
             </div>
