@@ -56,6 +56,12 @@ describe('parseDate', () => {
     const result = parseDate(original)
     expect(result).toBe(original)
   })
+
+  it('preserva las horas literales al parsear fechas de Supabase con sufijo +00', () => {
+    const d = parseDate('2026-08-11 11:23:48+00')
+    expect(d).toBeInstanceOf(Date)
+    expect(d.getHours()).toBe(11)
+  })
 })
 
 // ---------------------------------------------------------------------------

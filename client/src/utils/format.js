@@ -7,18 +7,28 @@ export function parseDate(value) {
   const s = String(value).trim()
   if (!s) return null
 
-  // ISO format (YYYY-MM-DD)
-  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s)
+  // If string comes from Supabase/Postgres with +00 or +00:00 offset on local timestamp:
+  // e.g. "2026-08-11 11:23:48+00" or "2026-08-11T11:23:48+00"
+  if (/[\sT]\d{2}:\d{2}:\d{2}\+00(?::00)?$/i.test(s)) {
+    const cleanStr = s.replace(/\+00(?::00)?$/i, '').trim()
+    const isoMatch = cleanStr.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{1,2}):(\d{2}):(\d{2})/)
+    if (isoMatch) {
+      const [_, y, m, d, h, min, sec] = isoMatch
+      const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min), parseInt(sec))
+      if (!isNaN(date)) return date
+    }
+  }
 
   // Latin format (DD/MM/YYYY)
-  const latinMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(.*)$/)
+  const latinMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/)
   if (latinMatch) {
-    const [_, d, m, y, time] = latinMatch
-    // Reconstruct as YYYY-MM-DD for native Date constructor
-    const isoStr = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}${time.replace(/\//g, '-').trim() ? 'T' + time.trim().replace(/\s+/g, 'T').split('T').pop() : ''}`
-    const date = new Date(isoStr)
+    const [_, d, m, y, h = '0', min = '0', sec = '0'] = latinMatch
+    const date = new Date(parseInt(y), parseInt(m) - 1, parseInt(d), parseInt(h), parseInt(min), parseInt(sec))
     if (!isNaN(date)) return date
   }
+
+  // ISO format (YYYY-MM-DD)
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return new Date(s)
 
   const d = new Date(s)
   return isNaN(d) ? null : d
