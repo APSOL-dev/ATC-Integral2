@@ -56,7 +56,7 @@ app.get('/api/health', async (req, res) => {
 
   try {
     const supabaseService = require('./services/supabase.service');
-    const { error } = await supabaseService.supabase.from('atc_usuarios_v').select('id').limit(1);
+    const { error } = await supabaseService.supabase.from('atc_pedidos_v').select('IDPedido').limit(1);
     supabaseStatus = !error;
   } catch (e) {
     supabaseStatus = false;
