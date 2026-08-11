@@ -22,10 +22,11 @@ export default function PedidoDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { pedidos, fetchPedidos, setPedidos } = useData()
+  const { pedidos, fetchPedidos, setPedidos, hydrateDetails } = useData()
 
   const [pedido, setPedido] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [detailsLoading, setDetailsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false)
   const [vendorName, setVendorName] = useState('')
@@ -36,41 +37,42 @@ export default function PedidoDetail() {
   const printableRef = useRef(null)
 
   useEffect(() => {
-    // 1. Carga rápida desde el contexto si está disponible y tiene detalles
-    if (pedidos && pedidos.length > 0) {
-      const found = pedidos.find(p => String(p.IDPedido) === String(id))
-      if (found && found.detalles && Array.isArray(found.detalles) && found.detalles.length > 0) {
-        setPedido(found)
-        setLoading(false)
-        return
-      }
+    if (!pedidos || pedidos.length === 0) return
+
+    const found = pedidos.find(p => String(p.IDPedido) === String(id))
+
+    if (!found) {
+      // Pedido no encontrado en contexto — fallback de red
+      setLoading(true)
+      fetch(`${import.meta.env.VITE_API_URL}/pedidos/${id}`, {
+        headers: { ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {}) }
+      })
+        .then(res => { if (!res.ok) throw new Error('No encontrado'); return res.json() })
+        .then(data => {
+          setPedido(data)
+          setLoading(false)
+          if (data?.detalles && setPedidos) {
+            setPedidos(prev => prev.map(p => String(p.IDPedido) === String(id) ? { ...p, detalles: data.detalles } : p))
+          }
+        })
+        .catch(() => { setPedido(null); setLoading(false) })
+      return
     }
 
-    // 2. Fallback a la red
-    setLoading(true)
-    fetch(`${import.meta.env.VITE_API_URL}/pedidos/${id}`, {
-      headers: {
-        ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
+    // Pedido encontrado — mostrarlo inmediatamente aunque no tenga detalles
+    setPedido(found)
+    setLoading(false)
+
+    const hasDetails = found.detalles && Array.isArray(found.detalles) && found.detalles.length > 0
+    if (!hasDetails) {
+      // Detalles aún no hidratados — disparar hydrateDetails (usa /details-batch, rápido)
+      setDetailsLoading(true)
+      if (typeof hydrateDetails === 'function') {
+        hydrateDetails([id]).finally(() => setDetailsLoading(false))
+      } else {
+        setDetailsLoading(false)
       }
-    })
-      .then(res => {
-        if (!res.ok) {
-          throw new Error('Pedido no encontrado')
-        }
-        return res.json()
-      })
-      .then(data => {
-        setPedido(data)
-        setLoading(false)
-        if (data && data.detalles && Array.isArray(data.detalles) && setPedidos) {
-          setPedidos(prev => prev.map(p => String(p.IDPedido) === String(id) ? { ...p, detalles: data.detalles } : p))
-        }
-      })
-      .catch(err => {
-        console.error('Error fetching pedido detail:', err)
-        setPedido(null)
-        setLoading(false)
-      })
+    }
   }, [id, pedidos])
 
   // Resolve vendor name (VendedorNombre is already mapped by the server)
@@ -364,8 +366,33 @@ export default function PedidoDetail() {
   }, [pedido])
 
   if (loading) return (
-    <div className="py-24 text-center">
-      <p className="text-slate-400 font-bold text-xs uppercase tracking-widest italic">Cargando pedido...</p>
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-6 animate-pulse">
+      {/* Header skeleton */}
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-slate-200" />
+        <div className="space-y-2">
+          <div className="h-6 w-48 bg-slate-200 rounded-xl" />
+          <div className="h-3 w-32 bg-slate-100 rounded-xl" />
+        </div>
+      </div>
+      {/* Card skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white rounded-[2rem] border border-slate-100 p-8 space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex justify-between items-center gap-4">
+              <div className="flex gap-3 items-center flex-1">
+                <div className="w-10 h-10 rounded-xl bg-slate-100 shrink-0" />
+                <div className="space-y-1.5 flex-1">
+                  <div className="h-3.5 bg-slate-200 rounded w-3/4" />
+                  <div className="h-2.5 bg-slate-100 rounded w-1/3" />
+                </div>
+              </div>
+              <div className="h-6 w-20 bg-slate-100 rounded-lg" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-slate-100 rounded-[2rem] h-64" />
+      </div>
     </div>
   )
 
@@ -544,7 +571,27 @@ export default function PedidoDetail() {
               </div>
             </div>
             <div className="p-6 space-y-4">
-              {pedido.detalles?.map((item, idx) => {
+              {detailsLoading ? (
+                // Skeleton de artículos mientras llegan los detalles
+                <div className="space-y-3 animate-pulse">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex justify-between items-center p-4 rounded-2xl border border-slate-100">
+                      <div className="flex gap-3 items-center flex-1">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 shrink-0" />
+                        <div className="space-y-1.5 flex-1">
+                          <div className="h-3.5 bg-slate-200 rounded w-2/3" />
+                          <div className="h-2.5 bg-slate-100 rounded w-1/4" />
+                        </div>
+                      </div>
+                      <div className="flex gap-4 items-center">
+                        <div className="h-6 w-16 bg-slate-100 rounded-lg" />
+                        <div className="h-8 w-24 bg-slate-100 rounded-lg" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+              pedido.detalles?.map((item, idx) => {
                 const price = parseCurrency(item.Precio)
                 const qty = parseCurrency(item.Cantidad)
                 const rawPrep = item.Preparado
@@ -630,7 +677,8 @@ export default function PedidoDetail() {
                     </div>
                   </div>
                 )
-              })}
+              }))
+            }
             </div>
             <div className="px-6 py-4 border-t border-slate-50 flex flex-col items-end gap-1.5 bg-slate-50/30">
               <div className="flex items-center gap-6">
