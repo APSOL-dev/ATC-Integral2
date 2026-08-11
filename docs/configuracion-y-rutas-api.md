@@ -8,6 +8,7 @@
 - Manejo de rutas inexistentes (404): Retorna respuesta JSON con el mensaje `Ruta no encontrada: [METODO] [PATH]`.
 - Bloqueo de archivos ocultos (403): Bloquea accesos a `.env` y directorios dotfile.
 - Modo Estricto de SQL Server: Se deshabilitaron los datos ficticios (mocks) de contingencia para Clientes y Productos (`mssql.service.js`). En caso de falta de conexión con el servidor SQL (`Casa29`), las peticiones lanzan un error de servicio no disponible (`503` / `500`) exigiendo vinculación real con la base de datos de la distribuidora.
+- Polyfill de WebSocket para Node.js < 22: En entornos de despliegue Docker/Container con Node 20 o inferior (ej. EasyPanel / VPS), `@supabase/supabase-js` requiere una implementación de WebSocket nativo para iniciar el cliente Realtime. Se inyectó la librería `ws` de forma explícita en `supabase.service.js` para asegurar compatibilidad runtime en cualquier versión de Node.js (18, 20, 22+).
 
 **Casos borde conocidos:**
 - Solicitudes a la raíz `/`: Si no hay un build estático de frontend en `client-dist`, responde 200 OK con metadatos JSON del servicio.

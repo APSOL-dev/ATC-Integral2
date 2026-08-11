@@ -1,10 +1,20 @@
 const { createClient } = require('@supabase/supabase-js');
+const WebSocket = require('ws');
 require('dotenv').config();
+
+if (!globalThis.WebSocket) {
+  globalThis.WebSocket = WebSocket;
+}
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://cjqziapqtyjsxqxumgbx.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqcXppYXBxdHlqc3hxeHVtZ2J4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIyMDE3NDIsImV4cCI6MjA2Nzc3Nzc0Mn0.EYVIWtOmrDd-_b-wA5lHMmO_CNuB22oc5I1dyl648rk';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession: false },
+  realtime: {
+    transport: WebSocket
+  }
+});
 
 // Smart in-memory cache for fast read operations
 const cache = new Map();
