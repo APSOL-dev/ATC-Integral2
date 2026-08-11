@@ -72,11 +72,13 @@ after(async () => {
 // ---------------------------------------------------------------------------
 describe('app.js — rutas base y seguridad', () => {
 
-  test('GET /api/health devuelve 200 con { status: "ok", timestamp }', async () => {
+  test('GET /api/health devuelve objeto de salud con mssql, supabase y status', async () => {
     const { status, bodyRaw } = await apiFetch('/api/health');
-    assert.strictEqual(status, 200);
+    assert.ok(status === 200 || status === 503);
     const body = JSON.parse(bodyRaw);
-    assert.strictEqual(body.status, 'ok');
+    assert.ok(body.status === 'ok' || body.status === 'degraded');
+    assert.ok(typeof body.mssql === 'boolean');
+    assert.ok(typeof body.supabase === 'boolean');
     assert.ok(typeof body.timestamp === 'string', 'timestamp debe ser un string ISO');
   });
 

@@ -43,8 +43,24 @@ const MOCK_VENDEDORES = [
   { VDOR: 7, NRO_VENDEDOR: 7, NOMBRE: 'Diego Sosa', ALIAS: 'Diego' }
 ];
 
+async function executeWithRetry(fn, retries = 3, delayMs = 1000) {
+  let lastError;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries) {
+        console.warn(`⚠️ Error al conectar con SQL Server (intento ${attempt}/${retries}): ${err.message}. Reintentando en ${delayMs}ms...`);
+        await new Promise(r => setTimeout(r, delayMs));
+      }
+    }
+  }
+  throw new Error(`Fallo de conexión con SQL Server tras ${retries} reintentos: ${lastError?.message || 'Servidor no disponible'}`);
+}
+
 async function getClientes(search = '') {
-  try {
+  return executeWithRetry(async () => {
     const pool = await getPool();
     let query = 'SELECT NRO_CLIENTE, NOMBRE_CLIENTE, CUIT, SALDO, VENDEDOR, NRO_VENDEDOR, LOCALIDAD, PROVINCIA, TELE FROM App.ClientesMay';
     if (search) {
@@ -59,32 +75,21 @@ async function getClientes(search = '') {
     }
     const result = await pool.request().query(query);
     return result.recordset;
-  } catch (err) {
-    if (search) {
-      const s = search.toLowerCase();
-      return MOCK_CLIENTES.filter(c => 
-        c.NOMBRE_CLIENTE.toLowerCase().includes(s) || 
-        String(c.NRO_CLIENTE).includes(s)
-      );
-    }
-    return MOCK_CLIENTES;
-  }
+  });
 }
 
 async function getClienteById(id) {
-  try {
+  return executeWithRetry(async () => {
     const pool = await getPool();
     const result = await pool.request()
       .input('id', id)
       .query('SELECT * FROM App.ClientesMay WHERE NRO_CLIENTE = @id');
-    return result.recordset[0];
-  } catch (err) {
-    return MOCK_CLIENTES.find(c => String(c.NRO_CLIENTE) === String(id)) || null;
-  }
+    return result.recordset[0] || null;
+  });
 }
 
 async function getProductos(search = '') {
-  try {
+  return executeWithRetry(async () => {
     const pool = await getPool();
     let query;
     if (search) {
@@ -99,26 +104,15 @@ async function getProductos(search = '') {
     }
     const result = await pool.request().query(query);
     return result.recordset;
-  } catch (err) {
-    if (search) {
-      const s = search.toLowerCase();
-      return MOCK_PRODUCTOS.filter(p => 
-        p.DESCRI.toLowerCase().includes(s) || 
-        String(p.CODART).includes(s)
-      );
-    }
-    return MOCK_PRODUCTOS;
-  }
+  });
 }
 
 async function getVendedores() {
-  try {
+  return executeWithRetry(async () => {
     const pool = await getPool();
     const result = await pool.request().query('SELECT TOP 100 * FROM App.Vendedores ORDER BY NOMBRE');
     return result.recordset;
-  } catch (err) {
-    return MOCK_VENDEDORES;
-  }
+  });
 }
 
 async function getPedidosFromDB() {
@@ -384,7 +378,7 @@ async function deletePedidoFromDB(idPedido) {
 
 async function getClientesByMultipleIds(ids) {
   if (!Array.isArray(ids) || ids.length === 0) return [];
-  try {
+  return executeWithRetry(async () => {
     const pool = await getPool();
     const request = pool.request();
     const inputNames = [];
@@ -395,10 +389,7 @@ async function getClientesByMultipleIds(ids) {
     const query = `SELECT * FROM App.ClientesMay WHERE NRO_CLIENTE IN (${inputNames.join(',')})`;
     const result = await request.query(query);
     return result.recordset;
-  } catch (err) {
-    const setIds = new Set(ids.map(String));
-    return MOCK_CLIENTES.filter(c => setIds.has(String(c.NRO_CLIENTE)));
-  }
+  });
 }
 
 module.exports = {

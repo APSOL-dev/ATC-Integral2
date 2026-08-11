@@ -32,7 +32,7 @@ const NAV_ITEMS = [
 
 export default function AppLayout() {
   const { user, logout, loading } = useAuth()
-  const { secondsLeft, isRefreshing, fetchPedidos } = useData()
+  const { secondsLeft, isRefreshing, fetchPedidos, serverHealth } = useData()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -186,10 +186,22 @@ export default function AppLayout() {
 
             <div className="hidden md:flex flex-col items-end">
               <span className="text-[10px] uppercase tracking-widest text-[#1e293b]/40 font-bold">Estado Servidor</span>
-              <span className="text-xs font-bold text-emerald-500 flex items-center gap-1.5">
-                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Conectado
-              </span>
+              {serverHealth?.mssql && serverHealth?.supabase ? (
+                <span className="text-xs font-bold text-emerald-500 flex items-center gap-1.5" title="Conexión SQL Server y Supabase OK">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Conectado
+                </span>
+              ) : !serverHealth?.mssql ? (
+                <span className="text-xs font-bold text-red-500 flex items-center gap-1.5" title="Sin conexión a SQL Server (Requiere VPN/Red Local)">
+                  <span className="size-1.5 rounded-full bg-red-500 animate-pulse" />
+                  Error SQL
+                </span>
+              ) : (
+                <span className="text-xs font-bold text-amber-500 flex items-center gap-1.5" title="Sin conexión a Supabase">
+                  <span className="size-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  Degradado
+                </span>
+              )}
             </div>
           </div>
         </header>

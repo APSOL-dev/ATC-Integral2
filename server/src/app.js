@@ -41,9 +41,35 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check with live database connectivity status
+app.get('/api/health', async (req, res) => {
+  let mssqlStatus = false;
+  let supabaseStatus = false;
+
+  try {
+    const { poolPromise } = require('./config/mssql');
+    const pool = await poolPromise;
+    mssqlStatus = !!(pool && pool.connected);
+  } catch (e) {
+    mssqlStatus = false;
+  }
+
+  try {
+    const supabaseService = require('./services/supabase.service');
+    const { error } = await supabaseService.supabase.from('atc_usuarios_v').select('id').limit(1);
+    supabaseStatus = !error;
+  } catch (e) {
+    supabaseStatus = false;
+  }
+
+  const isHealthy = mssqlStatus && supabaseStatus;
+
+  res.status(isHealthy ? 200 : 503).json({
+    status: isHealthy ? 'ok' : 'degraded',
+    mssql: mssqlStatus,
+    supabase: supabaseStatus,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Routes

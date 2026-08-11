@@ -16,6 +16,27 @@ export function DataProvider({ children }) {
   const [lastSync, setLastSync] = useState(null)
   const lastSyncRef = useRef(null)
   const [secondsLeft, setSecondsLeft] = useState(300)
+  const [serverHealth, setServerHealth] = useState({ status: 'ok', mssql: true, supabase: true })
+
+  const checkHealth = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_URL}/health`)
+      if (res.ok || res.status === 503) {
+        const data = await res.json()
+        setServerHealth(data)
+      } else {
+        setServerHealth({ status: 'error', mssql: false, supabase: false })
+      }
+    } catch (e) {
+      setServerHealth({ status: 'error', mssql: false, supabase: false })
+    }
+  }, [])
+
+  useEffect(() => {
+    checkHealth()
+    const healthInterval = setInterval(checkHealth, 15000)
+    return () => clearInterval(healthInterval)
+  }, [checkHealth])
 
   // Preloading cache for Clientes to achieve instant page transitions
   const [preloadedClientes, setPreloadedClientes] = useState({})
@@ -276,6 +297,7 @@ export function DataProvider({ children }) {
       isReady: lastSync !== null, 
       fetchPedidos,
       secondsLeft,
+      serverHealth,
       // Navigation
       prevPath,
       // Pedidos Filters & Page size
