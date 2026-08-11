@@ -7,33 +7,38 @@ const auth = require('../middlewares/auth');
 // Protect all routes
 router.use(auth);
 
-// Date Formatter (America/Argentina/Buenos_Aires timezone)
+// Date Formatter — preserva la hora literal de SQL Server / Supabase sin aplicar offset UTC
 function formatDate(date, format = 'ISO') {
   if (!date) return '';
-  const d = new Date(date);
-  if (isNaN(d.getTime())) return '';
 
-  const options = {
-    timeZone: 'America/Argentina/Buenos_Aires',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
-  };
+  let y, m, day, h, min, s;
 
-  const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(d);
-  const get = (type) => parts.find(p => p.type === type)?.value || '00';
-
-  const y = get('year');
-  const m = get('month');
-  const day = get('day');
-  let h = get('hour');
-  if (h === '24') h = '00';
-  const min = get('minute');
-  const s = get('second');
+  if (date instanceof Date) {
+    // Ya es un objeto Date — usar los métodos locales del servidor
+    y   = String(date.getFullYear()).padStart(4, '0');
+    m   = String(date.getMonth() + 1).padStart(2, '0');
+    day = String(date.getDate()).padStart(2, '0');
+    h   = String(date.getHours()).padStart(2, '0');
+    min = String(date.getMinutes()).padStart(2, '0');
+    s   = String(date.getSeconds()).padStart(2, '0');
+  } else {
+    // String de SQL Server / Supabase: "YYYY-MM-DD HH:mm:ss.mmm" o "YYYY-MM-DD HH:mm:ss+00"
+    const str = String(date).trim();
+    const match = str.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
+    if (match) {
+      [, y, m, day, h, min, s] = match;
+    } else {
+      // Fallback: parsear como Date local
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return '';
+      y   = String(d.getFullYear()).padStart(4, '0');
+      m   = String(d.getMonth() + 1).padStart(2, '0');
+      day = String(d.getDate()).padStart(2, '0');
+      h   = String(d.getHours()).padStart(2, '0');
+      min = String(d.getMinutes()).padStart(2, '0');
+      s   = String(d.getSeconds()).padStart(2, '0');
+    }
+  }
 
   if (format === 'FULL') return `${y}-${m}-${day} ${h}:${min}:${s}`;
   if (format === 'SHORT_WITH_TIME') return `${day}/${m}/${y} ${h}:${min}`;
