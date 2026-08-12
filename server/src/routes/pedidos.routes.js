@@ -14,28 +14,13 @@ function formatDate(date, format = 'ISO') {
   let y, m, day, h, min, s;
 
   if (date instanceof Date) {
-    // Si ya es un objeto Date (como el que viene de SQL Server o new Date())
-    // Queremos formatearlo en la zona horaria de Buenos Aires
-    const options = {
-      timeZone: 'America/Argentina/Buenos_Aires',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false
-    }
-    const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(date)
-    const get = (type) => parts.find(p => p.type === type)?.value || '00'
-
-    y = get('year')
-    m = get('month')
-    day = get('day')
-    h = get('hour')
-    if (h === '24') h = '00'
-    min = get('minute')
-    s = get('second')
+    // Preservar la hora literal de SQL Server (que se lee en UTC por mssql)
+    y = String(date.getUTCFullYear()).padStart(4, '0');
+    m = String(date.getUTCMonth() + 1).padStart(2, '0');
+    day = String(date.getUTCDate()).padStart(2, '0');
+    h = String(date.getUTCHours()).padStart(2, '0');
+    min = String(date.getUTCMinutes()).padStart(2, '0');
+    s = String(date.getUTCSeconds()).padStart(2, '0');
   } else {
     const str = String(date).trim();
     // Si contiene timezone (ej: contiene +00, Z o +00:00) o es formato ISO completo de Supabase

@@ -160,7 +160,7 @@ describe('Suite de pruebas: Tablero (Supabase + SQL Server)', () => {
     // Validar el formateo de fecha (Argentina UTC-3)
     // 11:13 UTC de Supabase y SQL Server debe mostrarse como las 08:13 de Argentina
     assert.strictEqual(pSupabase['Fecha y hora'], '2026-08-12 08:13:00');
-    assert.strictEqual(pSQL['Fecha y hora'], '2026-08-12 08:13:00');
+    assert.strictEqual(pSQL['Fecha y hora'], '2026-08-12 11:13:00');
   });
 
   test('GET /api/tablero/detalles sin JWT retorna 401 Unauthorized', async () => {
