@@ -38,6 +38,10 @@ Permite la emisión, visualización y edición de los pedidos y presupuestos en 
 - **Filtrado por Estado:** Permite hacer clic en las distintas pestañas de estados (ej. "Presupuesto (0)", "Nuevo (1)", "Preparado (2)") y renderizar exclusivamente aquellos pedidos cuyo estado coincida con la categoría seleccionada.
   - *Verificado por:* [pedidosFiltros.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/pedidos/pedidosFiltros.test.jsx)
 
+### 4. Sincronización Silenciosa y Preservación de Detalles
+- **Fusión de Estado en Segundo Plano:** El sistema realiza una sincronización periódica cada 30 segundos llamando al endpoint `/api/pedidos` (que devuelve cabeceras sin artículos). Para evitar que los detalles de un pedido abierto en pantalla desaparezcan y provoquen un parpadeo de carga, el contexto de datos mezcla los nuevos datos de cabecera con los detalles que ya están en memoria (`detalles`).
+  - *Verificado por:* [DataContext.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/COPIA%20ATC%20Migraci%C3%B3n/client/src/context/DataContext.test.jsx)
+
 ---
 
 ## Casos borde conocidos

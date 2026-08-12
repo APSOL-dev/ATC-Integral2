@@ -208,7 +208,22 @@ export function DataProvider({ children }) {
           return
         }
         const data = res.ok ? await res.json().catch(() => []) : []
-        setPedidos(Array.isArray(data) ? data : [])
+        setPedidos(prev => {
+          if (!Array.isArray(data)) return prev
+          const detallesMap = new Map()
+          prev.forEach(p => {
+            if (p.detalles && p.detalles.length > 0) {
+              detallesMap.set(String(p.IDPedido), p.detalles)
+            }
+          })
+          return data.map(p => {
+            const idStr = String(p.IDPedido)
+            if (detallesMap.has(idStr)) {
+              return { ...p, detalles: detallesMap.get(idStr) }
+            }
+            return p
+          })
+        })
         const syncDate = new Date()
         setLastSync(syncDate)
         lastSyncRef.current = syncDate
