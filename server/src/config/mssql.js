@@ -20,17 +20,52 @@ const config = {
   }
 };
 
-const poolPromise = new sql.ConnectionPool(config)
-  .connect()
-  .then(pool => {
-    console.log('✅ Connected to MSSQL (Casa29)');
-    return pool;
-  })
-  .catch(err => {
-    console.error('❌ MSSQL Connection Failed:', err.message);
-    // Don't throw - allow server to keep running without MSSQL
-    return null;
-  });
+let activePool = null;
+let connectionPromise = null;
+
+async function getOrConnectPool() {
+  if (activePool && activePool.connected) {
+    return activePool;
+  }
+
+  if (connectionPromise) {
+    try {
+      const pool = await connectionPromise;
+      if (pool && pool.connected) {
+        return pool;
+      }
+    } catch (err) {
+      // Ignore to allow retry
+    }
+  }
+
+  console.log('🔄 Attempting to connect to MSSQL...');
+  connectionPromise = new sql.ConnectionPool(config)
+    .connect()
+    .then(pool => {
+      console.log('✅ Connected to MSSQL (Casa29)');
+      activePool = pool;
+      connectionPromise = null;
+      return pool;
+    })
+    .catch(err => {
+      console.error('❌ MSSQL Connection Failed:', err.message);
+      activePool = null;
+      connectionPromise = null;
+      return null;
+    });
+
+  return connectionPromise;
+}
+
+const poolPromise = {
+  then: function(onFulfilled, onRejected) {
+    return getOrConnectPool().then(onFulfilled, onRejected);
+  }
+};
+
+// Trigger initial connection attempt in background
+getOrConnectPool().catch(() => {});
 
 module.exports = {
   sql,
