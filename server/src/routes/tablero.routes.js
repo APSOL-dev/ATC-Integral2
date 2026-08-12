@@ -7,7 +7,7 @@ function formatDate(date, format = 'ISO') {
   let y, m, day, h, min, s;
 
   if (date instanceof Date) {
-    // Preservar la hora literal de SQL Server (que se lee en UTC por mssql)
+    // Preservar la hora literal de SQL Server (mssql devuelve datetime como UTC del valor almacenado)
     y = String(date.getUTCFullYear()).padStart(4, '0');
     m = String(date.getUTCMonth() + 1).padStart(2, '0');
     day = String(date.getUTCDate()).padStart(2, '0');

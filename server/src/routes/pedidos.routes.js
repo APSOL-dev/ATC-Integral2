@@ -14,7 +14,7 @@ function formatDate(date, format = 'ISO') {
   let y, m, day, h, min, s;
 
   if (date instanceof Date) {
-    // Preservar la hora literal de SQL Server (que se lee en UTC por mssql)
+    // Preservar la hora literal de SQL Server (mssql devuelve datetime como UTC del valor almacenado)
     y = String(date.getUTCFullYear()).padStart(4, '0');
     m = String(date.getUTCMonth() + 1).padStart(2, '0');
     day = String(date.getUTCDate()).padStart(2, '0');
@@ -69,6 +69,22 @@ function formatDate(date, format = 'ISO') {
   if (format === 'FULL') return `${y}-${m}-${day} ${h}:${min}:${s}`;
   if (format === 'SHORT_WITH_TIME') return `${day}/${m}/${y} ${h}:${min}`;
   return `${y}-${m}-${day}T${h}:${min}:${s}`;
+}
+
+// Genera el timestamp actual formateado en hora local de Buenos Aires (para escribir, nunca para leer SQL Server)
+function localNow() {
+  const now = new Date();
+  const options = {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false
+  };
+  const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(now);
+  const get = (type) => parts.find(p => p.type === type)?.value || '00';
+  let h = get('hour');
+  if (h === '24') h = '00';
+  return `${get('year')}-${get('month')}-${get('day')} ${h}:${get('minute')}:${get('second')}`;
 }
 
 function parseCurrency(value) {
@@ -386,7 +402,7 @@ router.post('/', (req, res, next) => {
         IDPedido: newId,
         'Cliente': header.Cliente,
         'Cliente en BD?': 'TRUE',
-        'Fecha y hora': formatDate(now, 'FULL'),
+        'Fecha y hora': localNow(),
         'Dirección cliente': header['Lugar de entrega'],
         'Nombre': header.Nombre,
         'Razón social (NO BD)': '',
@@ -394,14 +410,14 @@ router.post('/', (req, res, next) => {
         'Porcentaje de descuento (%)': header.Descuento || 0,
         'Observaciones': header.Observaciones || '',
         'Emitido por': emitidoPor,
-        'Emitido por con fecha': `${emitidoPor} - ${formatDate(now, 'SHORT_WITH_TIME')}`,
-        'Emitido Fecha': formatDate(now, 'FULL'),
+        'Emitido por con fecha': `${emitidoPor} - ${localNow()}`,
+        'Emitido Fecha': localNow(),
         'Lugar de entrega': header['Lugar de entrega'],
         'Deposito que prepara': '',
         'Creado por': emitidoPor,
         'Total': header.Total || 0,
-        'Fecha_Ultima_Modificacion': formatDate(now, 'FULL'),
-        'Fecha y Hora de Última Modificación': formatDate(now, 'FULL'),
+        'Fecha_Ultima_Modificacion': localNow(),
+        'Fecha y Hora de Última Modificación': localNow(),
         'Estado': '0',
         'Vendedor': vdorFinal || ''
       };
@@ -482,7 +498,7 @@ router.patch('/:id/estado', async (req, res, next) => {
       // Update in Supabase if present
       await supabaseService.updateRows('atc_pedidos_v', { IDPedido: pedidoId }, {
         Estado: cleanStatus,
-        Fecha_Ultima_Modificacion: formatDate(now, 'FULL')
+        Fecha_Ultima_Modificacion: localNow()
       });
       invalidatePedidosCache();
       return res.json({ message: 'Estado del pedido en Base de Datos actualizado exitosamente', newStatus: cleanStatus });
@@ -495,7 +511,7 @@ router.patch('/:id/estado', async (req, res, next) => {
     if (!pedidoObj) return res.status(404).json({ message: 'Pedido no encontrado en Supabase' });
     
     pedidoObj.Estado = cleanStatus;
-    pedidoObj.Fecha_Ultima_Modificacion = formatDate(now, 'FULL');
+    pedidoObj.Fecha_Ultima_Modificacion = localNow();
     
     if (cleanStatus === '1' || cleanStatus === '1.' || cleanStatus === '0.0.99') {
       const allDetalles = await supabaseService.getRows('atc_detalles_pedidos_v');
@@ -506,7 +522,7 @@ router.patch('/:id/estado', async (req, res, next) => {
     
     await supabaseService.updateRows('atc_pedidos_v', { IDPedido: pedidoId }, {
       Estado: cleanStatus,
-      Fecha_Ultima_Modificacion: formatDate(now, 'FULL')
+      Fecha_Ultima_Modificacion: localNow()
     });
     
     invalidatePedidosCache();
@@ -590,7 +606,7 @@ router.put('/:id', async (req, res, next) => {
         ...mappedDbHeader,
         ...header,
         IDPedido: pedidoId,
-        'Fecha_Ultima_Modificacion': formatDate(now, 'FULL')
+        'Fecha_Ultima_Modificacion': localNow()
       };
       
       await withRetry(() => mssqlService.updatePedidoInDB(pedidoId, updatedPedido, newDetailRows));
@@ -608,7 +624,7 @@ router.put('/:id', async (req, res, next) => {
       ...existingPedido,
       ...header,
       IDPedido: pedidoId,
-      'Fecha_Ultima_Modificacion': formatDate(now, 'FULL')
+      'Fecha_Ultima_Modificacion': localNow()
     };
     
     const validColumns = new Set([
