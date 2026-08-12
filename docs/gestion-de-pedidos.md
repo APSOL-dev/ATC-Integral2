@@ -41,6 +41,8 @@ Permite la emisión, visualización y edición de los pedidos y presupuestos en 
 ### 4. Sincronización Silenciosa y Preservación de Detalles
 - **Fusión de Estado en Segundo Plano:** El sistema realiza una sincronización periódica cada 30 segundos llamando al endpoint `/api/pedidos` (que devuelve cabeceras sin artículos). Para evitar que los detalles de un pedido abierto en pantalla desaparezcan y provoquen un parpadeo de carga, el contexto de datos mezcla los nuevos datos de cabecera con los detalles que ya están en memoria (`detalles`).
   - *Verificado por:* [DataContext.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/COPIA%20ATC%20Migraci%C3%B3n/client/src/context/DataContext.test.jsx)
+- **Tolerancia a Fallos de Conexión de Base de Datos:** Si SQL Server experimenta un corte o retraso excesivo (timeout) al sincronizar, el backend propaga el error (HTTP 5xx) en lugar de ocultarlo devolviendo una lista vacía. El frontend detecta la respuesta errónea e interrumpe la actualización del estado local, reteniendo en pantalla la última versión consistente de los pedidos y alertando únicamente mediante el cartel de estado del servidor en la cabecera.
+  - *Verificado por:* [DataContext.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/COPIA%20ATC%20Migraci%C3%B3n/client/src/context/DataContext.test.jsx)
 
 ---
 

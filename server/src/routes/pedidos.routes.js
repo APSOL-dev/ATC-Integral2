@@ -213,11 +213,11 @@ async function getCompletePedidos() {
     }),
     withTimeout(mssqlService.getPedidosFromDB(), 10000).catch(err => {
       console.error('Error fetching DB pedidos for cache:', err.message);
-      return [];
+      throw err;
     }),
     withTimeout(mssqlService.getDetallesFromDB(), 10000).catch(err => {
       console.error('Error fetching DB detalles for cache:', err.message);
-      return [];
+      throw err;
     }),
     withTimeout(mssqlService.getProductos(), 10000).catch(err => {
       console.error('Error fetching SQL products for cache:', err.message);

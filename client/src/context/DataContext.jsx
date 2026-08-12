@@ -207,7 +207,10 @@ export function DataProvider({ children }) {
           window.location.href = '/login'
           return
         }
-        const data = res.ok ? await res.json().catch(() => []) : []
+        if (!res.ok) {
+          throw new Error(`Server returned status ${res.status}`)
+        }
+        const data = await res.json().catch(() => [])
         setPedidos(prev => {
           if (!Array.isArray(data)) return prev
           const detallesMap = new Map()

@@ -112,7 +112,68 @@ describe('DataContext - Sincronización de pedidos y mezcla de detalles', () => 
       await dataContextValue.fetchPedidos(false, true)
     })
 
-    // El test debería fallar en el estado RED actual porque se reemplaza la lista directamente
     expect(screen.getByTestId('has-details').textContent).toBe('yes')
+  })
+
+  it('debería mantener los pedidos anteriores si el fetch a la API falla (ej. 503 o 500)', async () => {
+    let fetchCount = 0
+    global.fetch.mockImplementation((url) => {
+      if (url.includes('/pedidos')) {
+        fetchCount++
+        if (fetchCount === 1) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve([
+              { IDPedido: '90001', Cliente: '1001', Total: 10000 }
+            ])
+          })
+        } else {
+          // Fallo del servidor (por ejemplo, SQL Server caído)
+          return Promise.resolve({
+            ok: false,
+            status: 503,
+            statusText: 'Service Unavailable',
+            json: () => Promise.resolve({ error: 'DB Connection Failed' })
+          })
+        }
+      }
+      
+      if (url.includes('/clientes') || url.includes('/productos') || url.includes('/usuarios')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve([]) })
+      }
+      return Promise.reject(new Error('Unknown url'))
+    })
+
+    let dataContextValue = null
+    function TestComponent() {
+      dataContextValue = useData()
+      return (
+        <div>
+          <span data-testid="ready">{dataContextValue.isReady ? 'yes' : 'no'}</span>
+          <span data-testid="pedidos-count">{dataContextValue.pedidos.length}</span>
+        </div>
+      )
+    }
+
+    render(
+      <DataProvider>
+        <TestComponent />
+      </DataProvider>
+    )
+
+    await waitFor(() => {
+      expect(screen.getByTestId('ready').textContent).toBe('yes')
+    })
+
+    expect(screen.getByTestId('pedidos-count').textContent).toBe('1')
+
+    // Disparar sincronización manual de pedidos (force = true)
+    await act(async () => {
+      await dataContextValue.fetchPedidos(false, true)
+    })
+
+    // Esperamos que se mantenga el pedido original y no se vacíe a 0
+    expect(screen.getByTestId('pedidos-count').textContent).toBe('1')
   })
 })
