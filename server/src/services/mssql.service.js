@@ -25,17 +25,18 @@ function formatToLocalSQLString(date) {
   if (!date) return null;
   if (typeof date === 'string') {
     const str = date.trim();
-    // Si ya tiene el formato YYYY-MM-DD HH:mm:ss, devolverlo tal cual
-    if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(str)) {
-      return str;
+    // Si ya tiene formato local sin timezone (YYYY-MM-DD HH:mm:ss o YYYY-MM-DDTHH:mm:ss sin offset)
+    // Supabase puede devolver el string con T pero sin timezone → es hora local, no UTC
+    if (/^\d{4}-\d{2}-\d{2}[\sT]\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(str)) {
+      return str.replace('T', ' ').substring(0, 19);
     }
-    // Si contiene timezone (ej: contiene +00, Z o +00:00) o es formato ISO completo, parsearla a local
-    if (str.includes('+00') || str.toLowerCase().includes('z') || str.includes('T')) {
+    // Solo si tiene timezone explícita (Z, +00, +00:00, -03:00, etc.), convertir a Buenos Aires
+    if (/Z$/i.test(str) || str.includes('+00') || /[+-]\d{2}:\d{2}$/.test(str)) {
       const d = new Date(str);
       if (isNaN(d.getTime())) return null;
       return formatDateToBuenosAires(d);
     }
-    // Si es otro string de fecha
+    // Fallback: parsear con Date (puede ser ambiguo)
     const d = new Date(str);
     if (isNaN(d.getTime())) return null;
     return formatDateToBuenosAires(d);
