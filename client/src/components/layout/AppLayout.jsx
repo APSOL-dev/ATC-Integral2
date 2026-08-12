@@ -32,7 +32,7 @@ const NAV_ITEMS = [
 
 export default function AppLayout() {
   const { user, logout, loading } = useAuth()
-  const { secondsLeft, isRefreshing, fetchPedidos, serverHealth } = useData()
+  const { serverHealth } = useData()
   const location = useLocation()
   const navigate = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -40,12 +40,6 @@ export default function AppLayout() {
   const title = routeTitles[location.pathname] || 'A Todo Color'
   const allowed = getSidebarItems(user?.perfil || 'VendedorCalle')
   const visibleItems = NAV_ITEMS.filter(item => allowed.includes(item.key))
-
-  const formatCountdown = (seconds) => {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${m}:${String(s).padStart(2, '0')}`
-  }
 
   function handleLogout() {
     logout()
@@ -132,6 +126,10 @@ export default function AppLayout() {
                 <LogOut size={16} />
                 <span>Cerrar Sesión</span>
               </button>
+
+              <div className="text-center text-[10px] text-white/30 font-bold mt-2 tracking-widest uppercase">
+                v2.0
+              </div>
             </div>
           </aside>
         </div>
@@ -158,31 +156,7 @@ export default function AppLayout() {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-6">
-            <div className="flex items-center gap-1.5 sm:gap-2 bg-slate-50 p-1 rounded-2xl border border-slate-200/60 shadow-sm hover:shadow transition-all duration-300">
-              {/* Left Pill: Timer & Status */}
-              <div className="flex items-center gap-1.5 sm:gap-2 bg-[#0f5da9] text-white px-2 sm:px-2.5 py-1.5 rounded-xl font-bold text-[10px] shadow-sm shadow-[#0f5da9]/20">
-                <div className="size-3.5 rounded-full border border-emerald-300 flex items-center justify-center">
-                  <div className="size-1 bg-transparent" />
-                </div>
-                <span className="tabular-nums font-bold tracking-tight text-white">
-                  {formatCountdown(secondsLeft)}
-                </span>
-                <div className="size-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse" />
-              </div>
 
-              {/* Right Button: Actualizar */}
-              <button 
-                onClick={() => fetchPedidos(true, true)} 
-                disabled={isRefreshing}
-                className="flex items-center gap-1 pr-2 pl-0.5 sm:pr-2.5 sm:pl-1 py-1.5 text-[9px] font-bold text-slate-500 hover:text-[#0f5da9] active:scale-95 transition-all disabled:opacity-50"
-                title="Sincronizar ahora"
-              >
-                <RefreshCw size={10} className={isRefreshing ? 'animate-spin text-[#0f5da9]' : 'text-slate-400'} />
-                <span className="hidden sm:inline">Actualizar</span>
-              </button>
-            </div>
-
-            <div className="h-8 w-px bg-slate-200 hidden md:block"></div>
 
             <div className="hidden md:flex flex-col items-end">
               <span className="text-[10px] uppercase tracking-widest text-[#1e293b]/40 font-bold">Estado conexión</span>

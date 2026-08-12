@@ -1,32 +1,78 @@
 const mssqlService = require('../services/mssql.service');
 
-// Date Formatter helper (America/Argentina/Buenos_Aires timezone)
+// Date Formatter helper (preserves literal time for SQL Server, converts UTC with offset for Supabase to America/Argentina/Buenos_Aires timezone)
 function formatDate(date, format = 'ISO') {
   if (!date) return ''
-  const d = new Date(date)
-  if (isNaN(d.getTime())) return ''
 
-  const options = {
-    timeZone: 'America/Argentina/Buenos_Aires',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false
+  let y, m, day, h, min, s;
+
+  if (date instanceof Date) {
+    // Si ya es un objeto Date (como el que viene de SQL Server o new Date())
+    // Queremos formatearlo en la zona horaria de Buenos Aires
+    const options = {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }
+    const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(date)
+    const get = (type) => parts.find(p => p.type === type)?.value || '00'
+
+    y = get('year')
+    m = get('month')
+    day = get('day')
+    h = get('hour')
+    if (h === '24') h = '00'
+    min = get('minute')
+    s = get('second')
+  } else {
+    const str = String(date).trim();
+    // Si contiene timezone (ej: contiene +00, Z o +00:00) o es formato ISO completo de Supabase
+    if (str.includes('+00') || str.toLowerCase().includes('z') || str.includes('T')) {
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return '';
+      // Formatear en zona de Buenos Aires
+      const options = {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }
+      const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(d)
+      const get = (type) => parts.find(p => p.type === type)?.value || '00'
+
+      y = get('year')
+      m = get('month')
+      day = get('day')
+      h = get('hour')
+      if (h === '24') h = '00'
+      min = get('minute')
+      s = get('second')
+    } else {
+      // Si es un string sin zona horaria (como el de SQL Server), extraer literal
+      const match = str.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2}):(\d{2})/);
+      if (match) {
+        [, y, m, day, h, min, s] = match;
+      } else {
+        const d = new Date(str);
+        if (isNaN(d.getTime())) return '';
+        y   = String(d.getFullYear()).padStart(4, '0');
+        m   = String(d.getMonth() + 1).padStart(2, '0');
+        day = String(d.getDate()).padStart(2, '0');
+        h   = String(d.getHours()).padStart(2, '0');
+        min = String(d.getMinutes()).padStart(2, '0');
+        s   = String(d.getSeconds()).padStart(2, '0');
+      }
+    }
   }
-
-  const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(d)
-  const get = (type) => parts.find(p => p.type === type)?.value || '00'
-
-  const y = get('year')
-  const m = get('month')
-  const day = get('day')
-  let h = get('hour')
-  if (h === '24') h = '00'
-  const min = get('minute')
-  const s = get('second')
 
   if (format === 'FULL') return `${y}-${m}-${day} ${h}:${min}:${s}`
   if (format === 'SHORT_WITH_TIME') return `${day}/${m}/${y} ${h}:${min}`
@@ -543,7 +589,14 @@ let tableroPedidosCache = null;
 let lastTableroPedidosFetch = 0;
 let tableroDetallesCache = null;
 let lastTableroDetallesFetch = 0;
-const TABLERO_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+const TABLERO_CACHE_TTL = 30 * 1000; // 30 seconds
+
+function invalidateTableroCache() {
+  tableroPedidosCache = null;
+  lastTableroPedidosFetch = 0;
+  tableroDetallesCache = null;
+  lastTableroDetallesFetch = 0;
+}
 
 router.get('/pedidos', async (req, res) => {
   try {
@@ -569,6 +622,13 @@ router.get('/pedidos', async (req, res) => {
     const pedidosMap = new Map();
     if (Array.isArray(supabasePedidos)) {
       supabasePedidos.forEach(p => {
+        // Formatear fechas de Supabase a la hora local para la correcta visualización
+        if (p['Fecha y hora']) p['Fecha y hora'] = formatDate(p['Fecha y hora'], 'FULL');
+        if (p['Fecha_Ultima_Modificacion']) p['Fecha_Ultima_Modificacion'] = formatDate(p['Fecha_Ultima_Modificacion'], 'FULL');
+        if (p['Fecha y Hora de Última Modificación']) p['Fecha y Hora de Última Modificación'] = formatDate(p['Fecha y Hora de Última Modificación'], 'FULL');
+        if (p['Emitido Fecha']) p['Emitido Fecha'] = formatDate(p['Emitido Fecha'], 'FULL');
+        if (p['Fecha de envio']) p['Fecha de envio'] = formatDate(p['Fecha de envio'], 'FULL');
+
         pedidosMap.set(String(p.IDPedido), p);
       });
     }
@@ -633,5 +693,7 @@ router.get('/detalles', async (req, res) => {
     res.status(500).json({ error: 'No se pudo leer la información de detalles de pedidos', details: error.message });
   }
 });
+
+router.invalidateCache = invalidateTableroCache;
 
 module.exports = router;

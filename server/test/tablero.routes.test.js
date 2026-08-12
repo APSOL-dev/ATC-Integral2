@@ -11,7 +11,15 @@ process.env.JWT_SECRET = TEST_SECRET;
 
 // Mocks de datos
 const mockSupabasePedidos = [
-  { IDPedido: '100001', Cliente: '123', Nombre: 'Cliente Supabase 1', Estado: '1', Total: 1500 }
+  {
+    IDPedido: '100001',
+    Cliente: '123',
+    Nombre: 'Cliente Supabase 1',
+    Estado: '1',
+    Total: 1500,
+    'Fecha y hora': '2026-08-12T11:13:00.000Z',
+    'Fecha_Ultima_Modificacion': '2026-08-12T11:13:00.000Z'
+  }
 ];
 
 const mockSupabaseDetalles = [
@@ -23,7 +31,7 @@ const mockDbPedidos = [
     IDPedido: 100002,
     IDCliente: 456,
     Nombre: 'Cliente SQL 1',
-    Fecha_Hora: new Date('2026-08-12T10:00:00Z'),
+    Fecha_Hora: new Date('2026-08-12T11:13:00.000Z'),
     Direccion: 'Calle Falsa 123',
     Celular_Contacto: '1122334455',
     Total: 2500,
@@ -31,7 +39,8 @@ const mockDbPedidos = [
     Vendedor: 5,
     Nro_PedidoGestion: 'PED-999',
     Nro_PedidoReferencia: 'REF-888',
-    Cliente_En_Base: true
+    Cliente_En_Base: true,
+    Fecha_Ultima_Modificacion: new Date('2026-08-12T11:13:00.000Z')
   }
 ];
 
@@ -147,6 +156,11 @@ describe('Suite de pruebas: Tablero (Supabase + SQL Server)', () => {
     // Validar el mapeo del vendedor en SQL Server
     assert.strictEqual(pSQL.VendedorNombre, 'Vendedor Pepe');
     assert.strictEqual(pSQL.Nombre, 'Cliente SQL 1');
+
+    // Validar el formateo de fecha (Argentina UTC-3)
+    // 11:13 UTC de Supabase y SQL Server debe mostrarse como las 08:13 de Argentina
+    assert.strictEqual(pSupabase['Fecha y hora'], '2026-08-12 08:13:00');
+    assert.strictEqual(pSQL['Fecha y hora'], '2026-08-12 08:13:00');
   });
 
   test('GET /api/tablero/detalles sin JWT retorna 401 Unauthorized', async () => {

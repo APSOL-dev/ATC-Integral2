@@ -91,6 +91,10 @@ export default function Sidebar() {
             <LogOut className="size-4.5" />
             <span className="text-xs">Cerrar Sesión</span>
           </button>
+
+          <div className="text-center text-[10px] text-white/30 font-bold mt-3 tracking-widest uppercase">
+            v2.0
+          </div>
         </div>
       </div>
     </aside>

@@ -91,8 +91,12 @@ app.use('/api/tablero',   require('./routes/tablero.routes'));
 
 // Serve static frontend files in production if client build exists
 if (clientDistPath) {
-  // Serve static assets (CSS, JS, images) but disable index.html auto-serving
-  app.use(express.static(clientDistPath, { index: false }));
+  // Serve static assets (CSS, JS, images) with immutable caching for 1 year
+  app.use(express.static(clientDistPath, { 
+    index: false,
+    immutable: true,
+    maxAge: '1y'
+  }));
   
   // For any non-API route, dynamically serve index.html with the generated nonce injected
   app.use((req, res, next) => {
@@ -107,6 +111,8 @@ if (clientDistPath) {
       const nonce = res.locals.cspNonce;
       // Inject the dynamic nonce into all script tags
       const modifiedHtml = html.replace(/<script/g, `<script nonce="${nonce}"`);
+      // Prevent browser and proxy caching of index.html so updates are immediate
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.send(modifiedHtml);
     });
   });

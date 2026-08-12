@@ -321,7 +321,7 @@ export default function PedidosList() {
             <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-full">
               <div className={`w-1.5 h-1.5 rounded-full ${isRefreshing ? 'bg-[#fe4a65] animate-ping' : 'bg-emerald-500'}`} />
               <span className="text-[9px] font-bold uppercase text-slate-500 tracking-widest">
-                {isRefreshing ? 'Actualizando...' : `Próxima Sinc: ${formatCountdown(secondsLeft)}`}
+                {isRefreshing ? 'Actualizando...' : 'Conectado'}
               </span>
               <button 
                 onClick={() => fetchPedidos(true, true)} 

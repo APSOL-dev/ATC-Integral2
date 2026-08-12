@@ -18,7 +18,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 // Smart in-memory cache for fast read operations
 const cache = new Map();
-const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+const CACHE_TTL = 30 * 1000; // 30 seconds
 
 function clearCache() {
   cache.clear();

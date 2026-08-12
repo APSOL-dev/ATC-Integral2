@@ -31,13 +31,7 @@ const Skel = ({ className = '' }) => (
 export default function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { pedidos, clientes, loading, isRefreshing, fetchPedidos, secondsLeft, isReady } = useData()
-
-  const formatCountdown = (seconds) => {
-    const m = Math.floor(seconds / 60)
-    const s = seconds % 60
-    return `${m}:${String(s).padStart(2, '0')}`
-  }
+  const { pedidos, clientes, loading, isReady } = useData()
 
   const saldoTotal = useMemo(() => {
     if (!user || !Array.isArray(clientes)) return 0
@@ -120,31 +114,13 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6 shrink-0 px-1 sm:px-2">
 
         {/* Welcome card */}
-        <div className="lg:col-span-2 bg-white rounded-[2rem] p-6 flex items-center justify-between border border-slate-200/60 shadow-sm relative overflow-hidden">
+        <div className="lg:col-span-2 bg-white rounded-[2rem] p-6 flex items-center gap-5 border border-slate-200/60 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 -mr-16 -mt-16 bg-[#0f5da9]/5 rounded-full blur-2xl" />
-          <div className="flex items-center gap-5 relative z-10">
-            <div className="w-12 h-12 rounded-2xl bg-[#0f5da9]/10 flex items-center justify-center text-2xl">👋</div>
-            <div>
-              <h1 className="text-xl font-bold text-[#1e293b] tracking-tight leading-none">
-                ¡Hola, {String(user?.nombre || '').split(' ')[0]}!
-              </h1>
-            </div>
-          </div>
-          <div className="text-right border-l border-slate-100 pl-6 flex items-center gap-3">
-            <div>
-              <p className="text-slate-300 text-[8px] font-bold uppercase tracking-widest mb-1">Próxima Sinc.</p>
-              <p className="text-[#0f5da9] font-bold text-sm tabular-nums">
-                {loading ? '...' : isRefreshing ? 'Sincronizando...' : formatCountdown(secondsLeft)}
-              </p>
-            </div>
-            <button
-              onClick={() => fetchPedidos(true, true)}
-              disabled={loading || isRefreshing}
-              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-[#0f5da9] active:scale-95 transition-all disabled:opacity-50"
-              title="Sincronizar ahora"
-            >
-              <RefreshCw size={14} className={(loading || isRefreshing) ? 'animate-spin text-[#0f5da9]' : ''} />
-            </button>
+          <div className="w-12 h-12 rounded-2xl bg-[#0f5da9]/10 flex items-center justify-center text-2xl relative z-10">👋</div>
+          <div className="relative z-10">
+            <h1 className="text-xl font-bold text-[#1e293b] tracking-tight">
+              ¡Hola, {String(user?.nombre || '').split(' ')[0]}!
+            </h1>
           </div>
         </div>
 

@@ -15,7 +15,7 @@ export function DataProvider({ children }) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastSync, setLastSync] = useState(null)
   const lastSyncRef = useRef(null)
-  const [secondsLeft, setSecondsLeft] = useState(300)
+  const [secondsLeft, setSecondsLeft] = useState(30)
   const [serverHealth, setServerHealth] = useState({ status: 'ok', mssql: true, supabase: true })
 
   const checkHealth = useCallback(async () => {
@@ -212,7 +212,7 @@ export function DataProvider({ children }) {
         const syncDate = new Date()
         setLastSync(syncDate)
         lastSyncRef.current = syncDate
-        setSecondsLeft(300) // Reset countdown on successful sync
+        setSecondsLeft(30) // Reset countdown on successful sync
       })
       .catch(err => {
         console.error('Error fetching pedidos:', err)
@@ -264,17 +264,11 @@ export function DataProvider({ children }) {
     }
   }, [location.pathname, fetchPedidos])
 
-  // Auto background sync every 5 minutes with 1s countdown timer
+  // Auto background sync every 30 seconds silently
   useEffect(() => {
     const interval = setInterval(() => {
-      setSecondsLeft(prev => {
-        if (prev <= 1) {
-          fetchPedidos(false, true)
-          return 300
-        }
-        return prev - 1
-      })
-    }, 1000)
+      fetchPedidos(false, true)
+    }, 30 * 1000)
     return () => clearInterval(interval)
   }, [fetchPedidos])
 
