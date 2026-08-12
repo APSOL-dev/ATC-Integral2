@@ -402,7 +402,7 @@ router.post('/', (req, res, next) => {
         IDPedido: newId,
         'Cliente': header.Cliente,
         'Cliente en BD?': 'TRUE',
-        'Fecha y hora': localNow(),
+        'Fecha y hora': now.toISOString(),
         'Dirección cliente': header['Lugar de entrega'],
         'Nombre': header.Nombre,
         'Razón social (NO BD)': '',
@@ -410,14 +410,14 @@ router.post('/', (req, res, next) => {
         'Porcentaje de descuento (%)': header.Descuento || 0,
         'Observaciones': header.Observaciones || '',
         'Emitido por': emitidoPor,
-        'Emitido por con fecha': `${emitidoPor} - ${localNow()}`,
-        'Emitido Fecha': localNow(),
+        'Emitido por con fecha': `${emitidoPor} - ${formatDate(now.toISOString(), 'SHORT_WITH_TIME')}`,
+        'Emitido Fecha': now.toISOString(),
         'Lugar de entrega': header['Lugar de entrega'],
         'Deposito que prepara': '',
         'Creado por': emitidoPor,
         'Total': header.Total || 0,
-        'Fecha_Ultima_Modificacion': localNow(),
-        'Fecha y Hora de Última Modificación': localNow(),
+        'Fecha_Ultima_Modificacion': now.toISOString(),
+        'Fecha y Hora de Última Modificación': now.toISOString(),
         'Estado': '0',
         'Vendedor': vdorFinal || ''
       };
@@ -498,7 +498,7 @@ router.patch('/:id/estado', async (req, res, next) => {
       // Update in Supabase if present
       await supabaseService.updateRows('atc_pedidos_v', { IDPedido: pedidoId }, {
         Estado: cleanStatus,
-        Fecha_Ultima_Modificacion: localNow()
+        Fecha_Ultima_Modificacion: now.toISOString()
       });
       invalidatePedidosCache();
       return res.json({ message: 'Estado del pedido en Base de Datos actualizado exitosamente', newStatus: cleanStatus });
@@ -511,7 +511,7 @@ router.patch('/:id/estado', async (req, res, next) => {
     if (!pedidoObj) return res.status(404).json({ message: 'Pedido no encontrado en Supabase' });
     
     pedidoObj.Estado = cleanStatus;
-    pedidoObj.Fecha_Ultima_Modificacion = localNow();
+    pedidoObj.Fecha_Ultima_Modificacion = now.toISOString();
     
     if (cleanStatus === '1' || cleanStatus === '1.' || cleanStatus === '0.0.99') {
       const allDetalles = await supabaseService.getRows('atc_detalles_pedidos_v');
@@ -522,7 +522,7 @@ router.patch('/:id/estado', async (req, res, next) => {
     
     await supabaseService.updateRows('atc_pedidos_v', { IDPedido: pedidoId }, {
       Estado: cleanStatus,
-      Fecha_Ultima_Modificacion: localNow()
+      Fecha_Ultima_Modificacion: now.toISOString()
     });
     
     invalidatePedidosCache();
@@ -606,7 +606,7 @@ router.put('/:id', async (req, res, next) => {
         ...mappedDbHeader,
         ...header,
         IDPedido: pedidoId,
-        'Fecha_Ultima_Modificacion': localNow()
+        'Fecha_Ultima_Modificacion': now.toISOString()
       };
       
       await withRetry(() => mssqlService.updatePedidoInDB(pedidoId, updatedPedido, newDetailRows));
@@ -624,7 +624,7 @@ router.put('/:id', async (req, res, next) => {
       ...existingPedido,
       ...header,
       IDPedido: pedidoId,
-      'Fecha_Ultima_Modificacion': localNow()
+      'Fecha_Ultima_Modificacion': now.toISOString()
     };
     
     const validColumns = new Set([
@@ -753,3 +753,4 @@ setTimeout(() => {
 }, 1000);
 
 module.exports = router;
+module.exports.formatDate = formatDate;
