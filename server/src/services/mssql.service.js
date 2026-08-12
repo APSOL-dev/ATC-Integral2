@@ -23,9 +23,32 @@ function safeParseInt32(val) {
 
 function formatToLocalSQLString(date) {
   if (!date) return null;
-  const d = (date instanceof Date) ? date : new Date(date);
-  if (isNaN(d.getTime())) return null;
+  if (typeof date === 'string') {
+    const str = date.trim();
+    // Si ya tiene el formato YYYY-MM-DD HH:mm:ss, devolverlo tal cual
+    if (/^\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2}$/.test(str)) {
+      return str;
+    }
+    // Si contiene timezone (ej: contiene +00, Z o +00:00) o es formato ISO completo, parsearla a local
+    if (str.includes('+00') || str.toLowerCase().includes('z') || str.includes('T')) {
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return null;
+      return formatDateToBuenosAires(d);
+    }
+    // Si es otro string de fecha
+    const d = new Date(str);
+    if (isNaN(d.getTime())) return null;
+    return formatDateToBuenosAires(d);
+  }
 
+  if (date instanceof Date) {
+    return formatDateToBuenosAires(date);
+  }
+
+  return null;
+}
+
+function formatDateToBuenosAires(d) {
   const options = {
     timeZone: 'America/Argentina/Buenos_Aires',
     year: 'numeric',
