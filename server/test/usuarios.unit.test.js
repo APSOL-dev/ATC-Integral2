@@ -32,6 +32,15 @@ let mockSheetsDb = {
       'NRO_VENDEDOR': '5',
       'Activo': 'FALSE',
     },
+    {
+      'Nombre de usuario': 'LockoutTestUser',
+      'Contraseña': 'Password123',
+      'Perfil': 'VendedorCalle',
+      'NRO_VENDEDOR': '7',
+      'Activo': 'TRUE',
+      'Intentos fallidos': 0,
+      'Bloqueado hasta': null
+    }
   ],
 };
 
@@ -182,6 +191,91 @@ describe('Usuarios Routes — Autenticación (POST /api/usuarios/login)', () => 
       body: { username: 'admintest', password: 'Admin123' },
     });
     assert.strictEqual(status, 200);
+  });
+
+  test('rate limiting por IP — el 6to intento consecutivo desde la misma IP devuelve 429', async () => {
+    const ip = '198.51.100.1';
+    // Realizar 5 intentos fallidos
+    for (let i = 0; i < 5; i++) {
+      const { status } = await apiFetch(server, '/api/usuarios/login', {
+        method: 'POST',
+        headers: { 'X-Forwarded-For': ip },
+        body: { username: 'AdminTest', password: 'WrongPassword' }
+      });
+      // Debería ser 401 porque las credenciales son incorrectas
+      assert.strictEqual(status, 401);
+    }
+
+    // El 6to intento desde la misma IP debe ser bloqueado por Rate Limit (429)
+    const { status, body } = await apiFetch(server, '/api/usuarios/login', {
+      method: 'POST',
+      headers: { 'X-Forwarded-For': ip },
+      body: { username: 'AdminTest', password: 'WrongPassword' }
+    });
+    assert.strictEqual(status, 429);
+    const parsed = JSON.parse(body);
+    assert.ok(parsed.message.toLowerCase().includes('demasiados intentos'));
+  });
+
+  test('bloqueo de cuenta por usuario — 5 intentos fallidos desde distintas IPs bloquean la cuenta (403)', async () => {
+    // Usamos LockoutTestUser y variamos las IPs para no gatillar el rate limit por IP (que es de 5)
+    for (let i = 1; i <= 5; i++) {
+      const { status } = await apiFetch(server, '/api/usuarios/login', {
+        method: 'POST',
+        headers: { 'X-Forwarded-For': `198.51.100.${i + 10}` },
+        body: { username: 'LockoutTestUser', password: 'WrongPassword' }
+      });
+      assert.strictEqual(status, 401);
+    }
+
+    // El 6to intento (desde otra IP distinta) debe devolver 403 indicando cuenta bloqueada
+    const { status, body } = await apiFetch(server, '/api/usuarios/login', {
+      method: 'POST',
+      headers: { 'X-Forwarded-For': '198.51.100.20' },
+      body: { username: 'LockoutTestUser', password: 'Password123' } // incluso con contraseña correcta!
+    });
+    assert.strictEqual(status, 403);
+    const parsed = JSON.parse(body);
+    assert.ok(parsed.message.toLowerCase().includes('bloqueada'));
+  });
+
+  test('login exitoso restablece el contador de intentos fallidos', async () => {
+    // 3 intentos fallidos con LockoutTestReset
+    // (usamos el mismo usuario pero un nombre diferente para aislar el estado en el mockDb)
+    // Agregamos un usuario dinámicamente al mockDb para este test
+    mockSheetsDb.users.push({
+      'Nombre de usuario': 'LockoutTestReset',
+      'Contraseña': 'Password123',
+      'Perfil': 'VendedorCalle',
+      'NRO_VENDEDOR': '8',
+      'Activo': 'TRUE',
+      'Intentos fallidos': 0,
+      'Bloqueado hasta': null
+    });
+
+    for (let i = 1; i <= 3; i++) {
+      await apiFetch(server, '/api/usuarios/login', {
+        method: 'POST',
+        headers: { 'X-Forwarded-For': `198.51.100.3${i}` },
+        body: { username: 'LockoutTestReset', password: 'WrongPassword' }
+      });
+    }
+
+    // El usuario debe tener 3 intentos fallidos en la base de datos
+    const userInDbBefore = mockSheetsDb.users.find(u => u['Nombre de usuario'] === 'LockoutTestReset');
+    assert.strictEqual(userInDbBefore['Intentos fallidos'], 3);
+
+    // Login exitoso
+    const { status } = await apiFetch(server, '/api/usuarios/login', {
+      method: 'POST',
+      headers: { 'X-Forwarded-For': '198.51.100.40' },
+      body: { username: 'LockoutTestReset', password: 'Password123' }
+    });
+    assert.strictEqual(status, 200);
+
+    // Los intentos fallidos deben haber vuelto a 0
+    const userInDbAfter = mockSheetsDb.users.find(u => u['Nombre de usuario'] === 'LockoutTestReset');
+    assert.strictEqual(userInDbAfter['Intentos fallidos'], 0);
   });
 
 });

@@ -25,7 +25,7 @@ function clearCache() {
 }
 
 const ALLOWED_COLUMNS_BY_VIEW = {
-  atc_usuarios_v: new Set(['id', 'Nombre de usuario', 'Email', 'Contraseña', 'Perfil', 'NRO_VENDEDOR', 'Activo']),
+  atc_usuarios_v: new Set(['id', 'Nombre de usuario', 'Email', 'Contraseña', 'Perfil', 'NRO_VENDEDOR', 'Activo', 'Intentos fallidos', 'Bloqueado hasta']),
   atc_pedidos_v: new Set([
     'IDPedido', 'Cliente', 'Cliente en BD?', 'Fecha y hora', 'Dirección cliente',
     'Nombre', 'Razón social (NO BD)', 'Celular de contacto', 'Porcentaje de descuento (%)',
@@ -44,7 +44,7 @@ const ALLOWED_COLUMNS_BY_VIEW = {
 };
 
 const INTEGER_COLUMNS = new Set([
-  'Cliente', 'Vendedor', 'Nro_PedidoGestion', 'Nro_PedidoReferencia', 'NRO_VENDEDOR'
+  'Cliente', 'Vendedor', 'Nro_PedidoGestion', 'Nro_PedidoReferencia', 'NRO_VENDEDOR', 'Intentos fallidos'
 ]);
 
 const NUMERIC_COLUMNS = new Set([
@@ -55,7 +55,7 @@ const NUMERIC_COLUMNS = new Set([
 
 const DATE_COLUMNS = new Set([
   'Fecha y hora', 'Emitido Fecha', 'Fecha de envio', 'Fecha de envío',
-  'Fecha_Ultima_Modificacion', 'Fecha y Hora de Última Modificación'
+  'Fecha_Ultima_Modificacion', 'Fecha y Hora de Última Modificación', 'Bloqueado hasta'
 ]);
 
 function sanitizeRow(tableName, rowObj) {

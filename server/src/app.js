@@ -1,24 +1,36 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const crypto = require('crypto');
 
 const app = express();
+
+// Trust proxy for rate limiters (Cloudflare / reverse proxies)
+app.set('trust proxy', 1);
 
 // Security HTTP Headers
 app.use(helmet());
 app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true }));
-app.use(
+
+// Generate a random cryptographic nonce per request
+app.use((req, res, next) => {
+  res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
+// Configure Content Security Policy dynamically using the generated nonce
+app.use((req, res, next) => {
   helmet.contentSecurityPolicy({
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://static.cloudflareinsights.com"],
+      scriptSrc: ["'self'", `'nonce-${res.locals.cspNonce}'`, "https://static.cloudflareinsights.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https://ui-avatars.com"],
-      connectSrc: ["'self'", "*"], // Allows connection to external APIs and web sockets
+      connectSrc: ["'self'", "https://static.cloudflareinsights.com"], // Restrict connect-src and remove * wildcard
     },
-  })
-);
+  })(req, res, next);
+});
 
 app.use(cors());
 app.use(express.json());
@@ -79,14 +91,24 @@ app.use('/api/tablero',   require('./routes/tablero.routes'));
 
 // Serve static frontend files in production if client build exists
 if (clientDistPath) {
-  app.use(express.static(clientDistPath));
+  // Serve static assets (CSS, JS, images) but disable index.html auto-serving
+  app.use(express.static(clientDistPath, { index: false }));
   
-  // For any non-API route, send index.html for React SPA routing
+  // For any non-API route, dynamically serve index.html with the generated nonce injected
   app.use((req, res, next) => {
     if (req.path.startsWith('/api')) {
       return next();
     }
-    res.sendFile(path.join(clientDistPath, 'index.html'));
+    const indexPath = path.join(clientDistPath, 'index.html');
+    fs.readFile(indexPath, 'utf8', (err, html) => {
+      if (err) {
+        return next(err);
+      }
+      const nonce = res.locals.cspNonce;
+      // Inject the dynamic nonce into all script tags
+      const modifiedHtml = html.replace(/<script/g, `<script nonce="${nonce}"`);
+      res.send(modifiedHtml);
+    });
   });
 } else {
   // Root endpoint info (only if static frontend is not present)

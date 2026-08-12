@@ -3,10 +3,23 @@ const router = express.Router();
 const supabaseService = require('../services/supabase.service');
 const auth = require('../middlewares/auth');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
+
+// Memory store fallback for user lockout
+const memoryLockouts = new Map();
+
+// Configure rate limiter: max 5 requests per 15 minutes per IP
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5,
+  message: { message: 'Demasiados intentos de inicio de sesión. Por favor, intente de nuevo en 15 minutos.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 // Helper to ensure header columns exist (No-op in Supabase as columns are defined in PostgreSQL schema)
 async function ensureHeaders() {
-  return ['Nombre de usuario', 'Contraseña', 'Perfil', 'NRO_VENDEDOR', 'Activo'];
+  return ['Nombre de usuario', 'Contraseña', 'Perfil', 'NRO_VENDEDOR', 'Activo', 'Intentos fallidos', 'Bloqueado hasta'];
 }
 
 // Get all users from Supabase public view (Protected)
@@ -30,48 +43,112 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Login endpoint
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const { username, password } = req.body;
   
   try {
     const users = await supabaseService.getRows('atc_usuarios_v');
     
-    const user = users.find(u => 
-      String(u['Nombre de usuario'] || '').trim().toLowerCase() === String(username).trim().toLowerCase() &&
-      String(u['Contraseña'] || '').trim() === String(password).trim()
+    // Find user by username case-insensitive
+    const foundUser = users.find(u => 
+      String(u['Nombre de usuario'] || '').trim().toLowerCase() === String(username || '').trim().toLowerCase()
     );
-    
-    if (user) {
-      if (user['Activo'] === 'FALSE' || user['Activo'] === 'Inactivo' || user['Activo'] === false) {
-        return res.status(403).json({ message: 'Usuario inactivo' });
+
+    if (foundUser) {
+      // Check if account is locked out
+      let attempts = foundUser['Intentos fallidos'] || 0;
+      let lockedUntil = foundUser['Bloqueado hasta'] ? new Date(foundUser['Bloqueado hasta']) : null;
+
+      // Merge with memory fallback
+      const mem = memoryLockouts.get(username.toLowerCase());
+      if (mem) {
+        attempts = Math.max(attempts, mem.attempts);
+        if (mem.lockedUntil && (!lockedUntil || mem.lockedUntil > lockedUntil)) {
+          lockedUntil = mem.lockedUntil;
+        }
       }
-      
-      // Sign JWT token
-      const token = jwt.sign(
-        { 
-          nombre: user['Nombre de usuario'], 
-          perfil: user['Perfil'], 
-          nroVendedor: user['NRO_VENDEDOR'] || null 
-        },
-        (process.env.JWT_SECRET || 'fallback-jwt-secret') + (process.env.NODE_ENV === 'test' ? '' : '-v2'),
-        { expiresIn: '30d' }
-      );
-      
-      // Return user data with token (omit password)
-      const userData = {
-        nombre: user['Nombre de usuario'],
-        perfil: user['Perfil'],
-        nroVendedor: user['NRO_VENDEDOR'] || null,
-        token
-      };
-      
-      res.json(userData);
+
+      if (lockedUntil && lockedUntil > new Date()) {
+        const minutesLeft = Math.ceil((lockedUntil.getTime() - Date.now()) / (60 * 1000));
+        return res.status(403).json({ 
+          message: `La cuenta está bloqueada temporalmente por exceso de intentos fallidos. Intente de nuevo en ${minutesLeft} minutos.` 
+        });
+      }
+
+      // Check if password matches
+      const isPasswordCorrect = String(foundUser['Contraseña'] || '').trim() === String(password || '').trim();
+
+      if (isPasswordCorrect) {
+        if (foundUser['Activo'] === 'FALSE' || foundUser['Activo'] === 'Inactivo' || foundUser['Activo'] === false) {
+          return res.status(403).json({ message: 'Usuario inactivo' });
+        }
+        
+        // Reset attempts on successful login
+        if (attempts > 0 || lockedUntil) {
+          try {
+            await supabaseService.updateRows('atc_usuarios_v', 
+              { 'Nombre de usuario': foundUser['Nombre de usuario'] },
+              { 'Intentos fallidos': 0, 'Bloqueado hasta': null }
+            );
+          } catch (err) {
+            console.warn('Database error resetting attempts, using memory fallback:', err.message);
+          }
+          memoryLockouts.delete(username.toLowerCase());
+        }
+
+        // Sign JWT token
+        const token = jwt.sign(
+          { 
+            nombre: foundUser['Nombre de usuario'], 
+            perfil: foundUser['Perfil'], 
+            nroVendedor: foundUser['NRO_VENDEDOR'] || null 
+          },
+          (process.env.JWT_SECRET || 'fallback-jwt-secret') + (process.env.NODE_ENV === 'test' ? '' : '-v2'),
+          { expiresIn: '30d' }
+        );
+        
+        // Return user data with token (omit password)
+        const userData = {
+          nombre: foundUser['Nombre de usuario'],
+          perfil: foundUser['Perfil'],
+          nroVendedor: foundUser['NRO_VENDEDOR'] || null,
+          token
+        };
+        
+        return res.json(userData);
+      } else {
+        // Password incorrect - increment attempts
+        const newAttempts = attempts + 1;
+        let nextLock = null;
+        if (newAttempts >= 5) {
+          nextLock = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
+        }
+
+        try {
+          await supabaseService.updateRows('atc_usuarios_v',
+            { 'Nombre de usuario': foundUser['Nombre de usuario'] },
+            { 
+              'Intentos fallidos': newAttempts, 
+              'Bloqueado hasta': nextLock ? nextLock.toISOString() : null 
+            }
+          );
+        } catch (err) {
+          console.warn('Database error persisting login attempts, using memory fallback:', err.message);
+        }
+        
+        memoryLockouts.set(username.toLowerCase(), { 
+          attempts: newAttempts, 
+          lockedUntil: nextLock 
+        });
+
+        return res.status(401).json({ message: 'Credenciales inválidas' });
+      }
     } else {
-      res.status(401).json({ message: 'Credenciales inválidas' });
+      return res.status(401).json({ message: 'Credenciales inválidas' });
     }
   } catch (error) {
     console.error('Error during login:', error);
-    res.status(500).json({ message: 'Error en el servidor' });
+    return res.status(500).json({ message: 'Error en el servidor' });
   }
 });
 

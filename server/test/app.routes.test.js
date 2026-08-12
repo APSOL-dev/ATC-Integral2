@@ -32,7 +32,7 @@ function apiFetch(path, options = {}) {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
-        resolve({ status: res.statusCode, bodyRaw: data });
+        resolve({ status: res.statusCode, bodyRaw: data, headers: res.headers });
       });
     });
     req.on('error', reject);
@@ -141,6 +141,28 @@ describe('app.js — rutas base y seguridad', () => {
     // Puede ser 401 (credenciales inválidas) o 500 (no conecta a sheets en test) — nunca 404 ni 403
     assert.notStrictEqual(status, 404);
     assert.notStrictEqual(status, 403);
+  });
+
+  test('Las cabeceras HTTP incluyen Content-Security-Policy (CSP) robusta, sin unsafe-inline y con connect-src restringido', async () => {
+    const { headers } = await apiFetch('/api/health');
+    
+    const csp = headers['content-security-policy'];
+    assert.ok(csp, 'Debe existir la cabecera Content-Security-Policy');
+    
+    // 1. Validar que connect-src no tenga el comodín *
+    assert.ok(!csp.includes('connect-src \'self\' *') && !csp.includes('connect-src *'), 'connect-src no debe permitir el comodín *');
+    
+    // 2. Validar que connect-src tenga self y cloudflareinsights
+    assert.ok(csp.includes("connect-src 'self'") && csp.includes('https://static.cloudflareinsights.com'), 'connect-src debe incluir self y cloudflareinsights');
+
+    // 3. Validar que script-src no incluya unsafe-inline
+    const scriptSrcMatch = csp.match(/script-src\s+([^;]+)/);
+    assert.ok(scriptSrcMatch, 'Debe existir la directiva script-src en el CSP');
+    const scriptSrcDirectives = scriptSrcMatch[1];
+    assert.ok(!scriptSrcDirectives.includes("'unsafe-inline'"), 'script-src no debe contener "unsafe-inline"');
+
+    // 4. Validar que script-src incluya un nonce dinámico
+    assert.ok(/'nonce-[A-Za-z0-9+/=]+'/.test(scriptSrcDirectives), 'script-src debe contener un nonce en base64');
   });
 
 });
