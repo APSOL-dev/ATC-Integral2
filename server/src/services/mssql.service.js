@@ -21,6 +21,36 @@ function safeParseInt32(val) {
   return Math.abs(hash);
 }
 
+function formatToLocalSQLString(date) {
+  if (!date) return null;
+  const d = (date instanceof Date) ? date : new Date(date);
+  if (isNaN(d.getTime())) return null;
+
+  const options = {
+    timeZone: 'America/Argentina/Buenos_Aires',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }
+
+  const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(d)
+  const get = (type) => parts.find(p => p.type === type)?.value || '00'
+
+  const y = get('year')
+  const m = get('month')
+  const day = get('day')
+  let h = get('hour')
+  if (h === '24') h = '00'
+  const min = get('minute')
+  const s = get('second')
+
+  return `${y}-${m}-${day} ${h}:${min}:${s}`;
+}
+
 const MOCK_CLIENTES = [
   { NRO_CLIENTE: 1001, NOMBRE_CLIENTE: 'Ferretería El Tornillo', CUIT: '20-12345678-9', SALDO: 45200, NRO_VENDEDOR: 3, VENDEDOR: 'Carlos Ruiz', DIREC: 'Av. San Martín 1234', LOCALIDAD: 'La Plata', PROVINCIA: 'Buenos Aires', TELE: '0221-4567890', SUC: 1 },
   { NRO_CLIENTE: 1002, NOMBRE_CLIENTE: 'Pinturas del Sur S.A.', CUIT: '30-23456789-0', SALDO: 128500, NRO_VENDEDOR: 3, VENDEDOR: 'Carlos Ruiz', DIREC: 'Calle 7 nro 890', LOCALIDAD: 'Quilmes', PROVINCIA: 'Buenos Aires', TELE: '011-42345678', SUC: 1 },
@@ -171,14 +201,14 @@ async function createPedidoInDB(pedidoData, detallesData) {
       requestHeader.input('nombre', sql.NVarChar(50), pedidoData.Nombre || '');
       requestHeader.input('direccion', sql.NVarChar(100), pedidoData['Dirección cliente'] || '');
       requestHeader.input('celular', sql.NVarChar(50), pedidoData['Celular de contacto'] || '');
-      requestHeader.input('fechaHora', sql.DateTime, pedidoData['Fecha y hora'] ? new Date(pedidoData['Fecha y hora']) : new Date());
+      requestHeader.input('fechaHora', sql.DateTime, formatToLocalSQLString(pedidoData['Fecha y hora'] || new Date()));
       requestHeader.input('porcentajeDescuento', sql.Float, parseFloat(pedidoData['Porcentaje de descuento (%)']) || 0);
       requestHeader.input('total', sql.Float, parseFloat(pedidoData.Total) || 0);
       requestHeader.input('emitidoPor', sql.NVarChar(100), pedidoData['Emitido por'] || '');
-      requestHeader.input('fechaEnvio', sql.DateTime, pedidoData['Fecha de envio'] ? new Date(pedidoData['Fecha de envio']) : null);
+      requestHeader.input('fechaEnvio', sql.DateTime, pedidoData['Fecha de envio'] ? formatToLocalSQLString(pedidoData['Fecha de envio']) : null);
       requestHeader.input('creadoPor', sql.NVarChar(100), pedidoData['Creado por'] || '');
       requestHeader.input('observaciones', sql.NVarChar(255), pedidoData.Observaciones || '');
-      requestHeader.input('fechaMod', sql.DateTime, pedidoData.Fecha_Ultima_Modificacion ? new Date(pedidoData.Fecha_Ultima_Modificacion) : new Date());
+      requestHeader.input('fechaMod', sql.DateTime, formatToLocalSQLString(pedidoData.Fecha_Ultima_Modificacion || new Date()));
       requestHeader.input('estado', sql.NVarChar(50), String(pedidoData.Estado || '1'));
       requestHeader.input('vendedor', sql.Int, parseInt(pedidoData.Vendedor) || null);
       requestHeader.input('nroPedidoGestion', sql.Int, parseInt(pedidoData.Nro_PedidoGestion) || null);
@@ -245,7 +275,7 @@ async function updatePedidoEstadoInDB(idPedido, nuevoEstado) {
     await pool.request()
       .input('id', sql.Int, parseInt(idPedido))
       .input('estado', sql.NVarChar(50), cleanStatus)
-      .input('fechaMod', sql.DateTime, now)
+      .input('fechaMod', sql.DateTime, formatToLocalSQLString(now))
       .input('estadoEnviado', sql.Bit, estadoEnviadoVal)
       .query(query);
     return true;
@@ -291,14 +321,14 @@ async function updatePedidoInDB(idPedido, pedidoData, detallesData) {
       requestHeader.input('nombre', sql.NVarChar(50), pedidoData.Nombre || '');
       requestHeader.input('direccion', sql.NVarChar(100), pedidoData['Dirección cliente'] || '');
       requestHeader.input('celular', sql.NVarChar(50), pedidoData['Celular de contacto'] || '');
-      requestHeader.input('fechaHora', sql.DateTime, pedidoData['Fecha y hora'] ? new Date(pedidoData['Fecha y hora']) : new Date());
+      requestHeader.input('fechaHora', sql.DateTime, formatToLocalSQLString(pedidoData['Fecha y hora'] || new Date()));
       requestHeader.input('porcentajeDescuento', sql.Float, parseFloat(pedidoData['Porcentaje de descuento (%)']) || 0);
       requestHeader.input('total', sql.Float, parseFloat(pedidoData.Total) || 0);
       requestHeader.input('emitidoPor', sql.NVarChar(100), pedidoData['Emitido por'] || '');
-      requestHeader.input('fechaEnvio', sql.DateTime, pedidoData['Fecha de envio'] ? new Date(pedidoData['Fecha de envio']) : null);
+      requestHeader.input('fechaEnvio', sql.DateTime, pedidoData['Fecha de envio'] ? formatToLocalSQLString(pedidoData['Fecha de envio']) : null);
       requestHeader.input('creadoPor', sql.NVarChar(100), pedidoData['Creado por'] || '');
       requestHeader.input('observaciones', sql.NVarChar(255), pedidoData.Observaciones || '');
-      requestHeader.input('fechaMod', sql.DateTime, new Date());
+      requestHeader.input('fechaMod', sql.DateTime, formatToLocalSQLString(new Date()));
       requestHeader.input('estado', sql.NVarChar(50), String(pedidoData.Estado || '1'));
       requestHeader.input('vendedor', sql.Int, parseInt(pedidoData.Vendedor) || null);
       requestHeader.input('nroPedidoGestion', sql.Int, parseInt(pedidoData.Nro_PedidoGestion) || null);
