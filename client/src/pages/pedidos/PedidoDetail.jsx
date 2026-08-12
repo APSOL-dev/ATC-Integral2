@@ -627,10 +627,10 @@ export default function PedidoDetail() {
                         <Package size={18} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-bold text-[#1e293b] leading-tight group-hover:text-[#0f5da9] transition-colors truncate">
+                        <p className="text-[15px] font-bold text-[#1e293b] leading-tight group-hover:text-[#0f5da9] transition-colors truncate">
                           {title}
                         </p>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">
+                        <p className="text-[11px] font-bold text-slate-400 uppercase mt-0.5">
                           Cód: {itemCode || idx}
                         </p>
                       </div>
@@ -648,8 +648,8 @@ export default function PedidoDetail() {
                         </div>
                         {hasStock && (
                           <div className="text-right">
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Stock actual</span>
-                            <span className={`inline-block font-bold text-xs px-2 py-0.5 rounded-lg tabular-nums ${stockColor}`}>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Stock actual</span>
+                            <span className={`inline-block font-bold text-sm px-2 py-0.5 rounded-lg tabular-nums ${stockColor}`}>
                               {stockNum} uds
                             </span>
                           </div>

@@ -526,10 +526,10 @@ export default function PedidoForm() {
                       className={`w-full text-left px-8 py-5 flex items-center justify-between border-b border-slate-50 last:border-0 group transition-colors ${index === activeProductIndex ? 'bg-[#0f5da9]/10' : 'hover:bg-[#0f5da9]/5'}`}
                     >
                       <div className="flex-1 pr-4">
-                        <p className="font-bold text-[#1e293b] text-[15px] group-hover:text-[#0f5da9] transition-colors leading-snug">{title}</p>
+                        <p className="font-bold text-[#1e293b] text-base group-hover:text-[#0f5da9] transition-colors leading-snug">{title}</p>
                         <div className="flex flex-wrap items-center gap-4 mt-2">
-                          <p className="text-xs font-bold text-slate-500 uppercase">Cód: {p.CODART || p.CODIGO}</p>
-                          <p className={`text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg ${p.stock > 0 ? 'text-emerald-700 bg-emerald-100 font-extrabold border border-emerald-300/60' : 'text-red-600 bg-red-100 font-bold border border-red-200'}`}>Stock: {p.stock || 0}</p>
+                          <p className="text-sm font-bold text-slate-500 uppercase">Cód: {p.CODART || p.CODIGO}</p>
+                          <p className={`text-sm font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg ${p.stock > 0 ? 'text-emerald-700 bg-emerald-100 font-extrabold border border-emerald-300/60' : 'text-red-600 bg-red-100 font-bold border border-red-200'}`}>Stock: {p.stock || 0}</p>
                           <p className="text-[15px] font-bold text-[#0f5da9] uppercase">{formatCurrency(p.CC_CIVA || p.PRECIO_LISTA || 0)}</p>
                         </div>
                       </div>
@@ -572,11 +572,11 @@ export default function PedidoForm() {
                         return (
                         <tr key={code} className="hover:bg-slate-50/80 transition-colors group">
                           <td className="px-8 py-5">
-                            <p className="text-[15px] font-bold text-[#1e293b] leading-snug">{title}</p>
-                            <p className="text-xs font-bold text-slate-500 uppercase tracking-tighter mt-1">SKU: {code}</p>
+                            <p className="text-base font-bold text-[#1e293b] leading-snug">{title}</p>
+                            <p className="text-sm font-bold text-slate-500 uppercase tracking-tighter mt-1">SKU: {code}</p>
                           </td>
                           <td className="px-4 py-5 text-center">
-                            <span className={`text-xs font-extrabold uppercase px-2.5 py-1 rounded-lg ${item.StockAvailable > 0 ? 'text-emerald-700 bg-emerald-100 border border-emerald-300/60 font-black' : 'text-red-600 bg-red-100 font-bold'}`}>
+                            <span className={`text-sm font-extrabold uppercase px-2.5 py-1 rounded-lg ${item.StockAvailable > 0 ? 'text-emerald-700 bg-emerald-100 border border-emerald-300/60 font-black' : 'text-red-600 bg-red-100 font-bold'}`}>
                               {item.StockAvailable}
                             </span>
                           </td>
