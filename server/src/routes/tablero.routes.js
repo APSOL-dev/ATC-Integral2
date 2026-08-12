@@ -117,8 +117,7 @@ function mapDbDetalleToSheetFormat(dbD) {
 const express = require('express');
 const router = express.Router();
 const { poolPromise, sql } = require('../config/mssql');
-const sheetsService = require('../services/sheets.service');
-const { rowsToObjects } = require('../utils/sheetMapper');
+const supabaseService = require('../services/supabase.service');
 const auth = require('../middlewares/auth');
 
 // Protect all dashboard analytics routes
@@ -538,7 +537,7 @@ router.get('/productos/marcas', async (req, res) => {
   }
 });
 
-// ─── GOOGLE SHEETS: Pedidos ───────────────────────────────────
+// ─── PEDIDOS Y DETALLES (Supabase + SQL Server) ───────────────────
 // Tablero In-Memory Cache configuration
 let tableroPedidosCache = null;
 let lastTableroPedidosFetch = 0;
@@ -546,31 +545,33 @@ let tableroDetallesCache = null;
 let lastTableroDetallesFetch = 0;
 const TABLERO_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
-router.get('/sheets/pedidos', async (req, res) => {
+router.get('/pedidos', async (req, res) => {
   try {
     const now = Date.now();
     if (tableroPedidosCache && (now - lastTableroPedidosFetch < TABLERO_CACHE_TTL)) {
       return res.json({ data: tableroPedidosCache });
     }
 
-    const [rows, dbPedidos] = await Promise.all([
-      sheetsService.getRows('Pedidos!A1:AZ'),
+    const [supabasePedidos, dbPedidos] = await Promise.all([
+      supabaseService.getRows('atc_pedidos_v').catch(err => {
+        console.error('Error fetching Supabase pedidos for tablero:', err.message);
+        return [];
+      }),
       mssqlService.getPedidosFromDB().catch(err => {
         console.error('Error fetching DB pedidos for tablero:', err.message);
         return [];
       })
     ]);
 
-    const sheetsPedidos = rowsToObjects(rows)
-      .filter(p => p.IDPedido && p.IDPedido.toString().trim() !== '');
-
     const mappedDbPedidos = Array.isArray(dbPedidos) ? dbPedidos.map(mapDbPedidoToSheetFormat) : [];
 
-    // Group/Merge: DB overrides Sheets
+    // Group/Merge: DB overrides Supabase (similar to how it overrides Sheets before)
     const pedidosMap = new Map();
-    sheetsPedidos.forEach(p => {
-      pedidosMap.set(String(p.IDPedido), p);
-    });
+    if (Array.isArray(supabasePedidos)) {
+      supabasePedidos.forEach(p => {
+        pedidosMap.set(String(p.IDPedido), p);
+      });
+    }
     mappedDbPedidos.forEach(p => {
       pedidosMap.set(String(p.IDPedido), p);
     });
@@ -588,15 +589,18 @@ router.get('/sheets/pedidos', async (req, res) => {
   }
 });
 
-router.get('/sheets/detalles', async (req, res) => {
+router.get('/detalles', async (req, res) => {
   try {
     const now = Date.now();
     if (tableroDetallesCache && (now - lastTableroDetallesFetch < TABLERO_CACHE_TTL)) {
       return res.json({ data: tableroDetallesCache });
     }
 
-    const [detailRowsRaw, dbDetalles, dbPedidos] = await Promise.all([
-      sheetsService.getRows('Detalles pedidos!A1:AZ'),
+    const [supabaseDetalles, dbDetalles, dbPedidos] = await Promise.all([
+      supabaseService.getRows('atc_detalles_pedidos_v').catch(err => {
+        console.error('Error fetching Supabase detalles for tablero:', err.message);
+        return [];
+      }),
       mssqlService.getDetallesFromDB().catch(err => {
         console.error('Error fetching DB detalles for tablero:', err.message);
         return [];
@@ -607,19 +611,18 @@ router.get('/sheets/detalles', async (req, res) => {
       })
     ]);
 
-    const sheetsDetalles = rowsToObjects(detailRowsRaw);
     const dbPedidoIds = new Set(
       (Array.isArray(dbPedidos) ? dbPedidos : []).map(p => String(p.IDPedido))
     );
 
-    // Keep sheet details only for orders that are NOT in the SQL Server database
-    const filteredSheetsDetalles = sheetsDetalles.filter(
-      d => d.IDPedido && !dbPedidoIds.has(String(d.IDPedido))
-    );
+    // Keep Supabase details only for orders that are NOT in the SQL Server database
+    const filteredSupabaseDetalles = Array.isArray(supabaseDetalles)
+      ? supabaseDetalles.filter(d => d.IDPedido && !dbPedidoIds.has(String(d.IDPedido)))
+      : [];
 
     const mappedDbDetalles = Array.isArray(dbDetalles) ? dbDetalles.map(mapDbDetalleToSheetFormat) : [];
 
-    const finalDetalles = [...filteredSheetsDetalles, ...mappedDbDetalles];
+    const finalDetalles = [...filteredSupabaseDetalles, ...mappedDbDetalles];
 
     tableroDetallesCache = finalDetalles;
     lastTableroDetallesFetch = Date.now();

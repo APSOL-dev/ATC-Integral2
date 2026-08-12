@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Loader2, DollarSign, ShoppingCart, Package, BarChart3, Search, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
-import { fetchSheetsPedidos, fetchSheetsDetalles } from '../api/dashboardApi';
+import { fetchPedidos, fetchDetalles } from '../api/dashboardApi';
 import StatusChart from '../components/StatusChart';
 import SimpleBarChart from '../components/SimpleBarChart';
 import LineChart from '../components/LineChart';
@@ -23,8 +23,8 @@ const PedidosDashboard = ({ onUpdate, filters, onFilterChange, setOptionsForFilt
       else setRefreshing(true);
       try {
         const [pedidosReq, detallesReq] = await Promise.all([
-          fetchSheetsPedidos(),
-          fetchSheetsDetalles()
+          fetchPedidos(),
+          fetchDetalles()
         ]);
         setPedidosData(pedidosReq.data || []);
         setDetallesData(detallesReq.data || []);

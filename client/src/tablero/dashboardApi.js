@@ -90,12 +90,12 @@ export async function fetchHealth() {
   return fetchJSON('/health');
 }
 
-export async function fetchSheetsPedidos() {
-  return fetchJSON('/sheets/pedidos');
+export async function fetchPedidos() {
+  return fetchJSON('/pedidos');
 }
 
-export async function fetchSheetsDetalles() {
-  return fetchJSON('/sheets/detalles');
+export async function fetchDetalles() {
+  return fetchJSON('/detalles');
 }
 
 // Fetch all dashboard data in parallel
