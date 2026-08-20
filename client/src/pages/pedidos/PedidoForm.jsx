@@ -9,6 +9,7 @@ import { formatCurrency, parseCurrency } from '../../utils/format.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { useData } from '../../context/DataContext.jsx'
 import { PERFILES } from '../../utils/permisos.js'
+import { matchProductSearch } from '../../utils/productSearch.js'
 
 export default function PedidoForm() {
   const navigate = useNavigate()

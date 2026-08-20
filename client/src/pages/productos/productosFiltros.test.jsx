@@ -122,4 +122,22 @@ describe('ProductosCatalog: Filtros y Buscador', () => {
     expect(screen.queryByText('Esmalte Sintético Rojo 1L')).not.toBeInTheDocument()
     expect(screen.queryByText('Pincel Profesional Nro 15')).not.toBeInTheDocument()
   })
+
+  it('debería permitir búsqueda por múltiples palabras sueltas o desordenadas', () => {
+    render(<ProductosCatalog />)
+
+    const searchInput = screen.getByPlaceholderText('Buscar descripción o código...')
+    
+    // Buscar "Esmalte 1L" (palabras desordenadas / no consecutivas)
+    fireEvent.change(searchInput, { target: { value: 'Esmalte 1L' } })
+
+    act(() => {
+      vi.advanceTimersByTime(400)
+    })
+
+    expect(screen.getByText('Esmalte Sintético Rojo 1L')).toBeInTheDocument()
+    expect(screen.queryByText('Látex Interior Blanco 20L')).not.toBeInTheDocument()
+    expect(screen.queryByText('Pincel Profesional Nro 15')).not.toBeInTheDocument()
+  })
 })
+

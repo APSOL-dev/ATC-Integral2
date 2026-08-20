@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { X, Search, Plus, Trash2, Save, ShoppingCart, Tag, MapPin, AlignLeft } from 'lucide-react'
 import { formatCurrency, parseCurrency } from '../../utils/format.js'
 import { useData } from '../../context/DataContext.jsx'
+import { matchProductSearch } from '../../utils/productSearch.js'
 
 export default function EditPedidoModal({ pedido, onClose, onSave }) {
   const [loading, setLoading] = useState(false)
@@ -55,11 +56,7 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
 
   const filteredProductos = useMemo(() => {
     if (!productSearch) return productos.slice(0, 150)
-    const lower = productSearch.toLowerCase()
-    return productos.filter(p => 
-      String(p.CODART || p.CODIGO || '').toLowerCase().includes(lower) || 
-      String(p.DESCRI || p.DESCRIPCION || '').toLowerCase().includes(lower)
-    ).slice(0, 150) // Limitar a 150 para rendimiento
+    return productos.filter(p => matchProductSearch(p, productSearch)).slice(0, 150) // Limitar a 150 para rendimiento
   }, [productSearch, productos])
 
   const handleProductKeyDown = (e) => {

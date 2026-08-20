@@ -8,8 +8,8 @@ Expone el catálogo de artículos disponibles en la distribuidora de pinturas. O
 ## Escenarios cubiertos
 
 ### 1. Búsqueda y Filtrado General
-- **Búsqueda por Texto:** Permite ingresar un fragmento de descripción o el código de barra/artículo, aplicando un retardo inteligente de 400ms (debounce) para optimizar el rendimiento de renderización, y mostrando exclusivamente los artículos coincidentes.
-  - *Verificado por:* [productosFiltros.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/productos/productosFiltros.test.jsx)
+- **Búsqueda por Texto Flexibilizada:** Permite ingresar palabras clave múltiples sueltas o desordenadas (separadas por espacio o por el carácter `+`), o el código de artículo. El sistema valida que todas las palabras buscadas estén presentes dentro del título/descripción, marca, proveedor o código del artículo, aplicando un debounce de 400ms.
+  - *Verificado por:* [productosFiltros.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/productos/productosFiltros.test.jsx) y [productSearch.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/utils/productSearch.test.js)
 
 ### 2. Filtro de Stock Disponible
 - **Solo con Stock:** Al presionar la casilla de selección "Stock", el catálogo descarta todos aquellos productos cuya existencia actual sea igual a `0`.

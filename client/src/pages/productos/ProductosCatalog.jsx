@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Search, X, Package, Filter, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, Check, FileSpreadsheet } from 'lucide-react'
 import { formatCurrency } from '../../utils/format.js'
 import { useData } from '../../context/DataContext.jsx'
+import { matchProductSearch } from '../../utils/productSearch.js'
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value)
@@ -42,11 +43,7 @@ export default function ProductosCatalog() {
 
   const productos = useMemo(() => {
     if (!debouncedSearch.trim()) return globalProductos
-    const s = debouncedSearch.toLowerCase()
-    return globalProductos.filter(p => 
-      (p.DESCRI || '').toLowerCase().includes(s) ||
-      String(p.CODART).toLowerCase().includes(s)
-    )
+    return globalProductos.filter(p => matchProductSearch(p, debouncedSearch))
   }, [globalProductos, debouncedSearch])
 
   useEffect(() => {
