@@ -200,6 +200,43 @@ async function createPedidoInDB(pedidoData, detallesData) {
       checkReq.input('checkId', sql.Int, pedidoData.IDPedido);
       const checkRes = await checkReq.query('SELECT 1 FROM AppTransacciones.PedidoAppCabe WHERE IDPedido = @checkId');
       if (checkRes.recordset && checkRes.recordset.length > 0) {
+        if (detallesData && detallesData.length > 0) {
+          const countReq = new sql.Request(transaction);
+          countReq.input('checkIdDeta', sql.Int, pedidoData.IDPedido);
+          const countRes = await countReq.query('SELECT COUNT(*) AS detaCount FROM AppTransacciones.PedidoAppDeta WHERE IdPedido = @checkIdDeta');
+          const detaCount = countRes.recordset && countRes.recordset[0] ? countRes.recordset[0].detaCount : 0;
+
+          if (detaCount === 0) {
+            console.log(`[MSSQL] PedidoAppCabe ${pedidoData.IDPedido} existe pero no tiene detalles. Insertando ${detallesData.length} renglones faltantes...`);
+            for (const item of detallesData) {
+              const detailQuery = `
+                INSERT INTO AppTransacciones.PedidoAppDeta (
+                  IdPedido, IdDetalle, ItemCodigo, NombreItem, Cantidad, Precio,
+                  Sub_Total, PORCENT, Descuento, Total, CantidadPreparada, IdRenglonGestion
+                ) VALUES (
+                  @idPedido, @idDetalle, @itemCodigo, @nombreItem, @cantidad, @precio,
+                  @subTotal, @porcent, @descuento, @totalDeta, @cantidadPreparada, @idRenglonGestion
+                )
+              `;
+              
+              const requestDeta = new sql.Request(transaction);
+              requestDeta.input('idPedido', sql.Int, item.IDPedido);
+              requestDeta.input('idDetalle', sql.Int, safeParseInt32(item.IDDetalle));
+              requestDeta.input('itemCodigo', sql.Int, parseInt(item['Codigo (más alla de si es item o nombre)']) || null);
+              requestDeta.input('nombreItem', sql.NVarChar(100), item['Nombre (más alla de si es item o nombre)'] || '');
+              requestDeta.input('cantidad', sql.Float, parseFloat(item.Cantidad) || 0);
+              requestDeta.input('precio', sql.Float, parseFloat(item.Precio) || 0);
+              requestDeta.input('subTotal', sql.Float, parseFloat(item['Subtotal (precio x cantidad)']) || 0);
+              requestDeta.input('porcent', sql.Float, parseFloat(item.PORCENT) || 0);
+              requestDeta.input('descuento', sql.Float, parseFloat(item.Descuento) || 0);
+              requestDeta.input('totalDeta', sql.Float, parseFloat(item['Total (subtotal - monto del descuento)']) || 0);
+              requestDeta.input('cantidadPreparada', sql.Float, parseFloat(item['Cantidad preparada']) || 0);
+              requestDeta.input('idRenglonGestion', sql.Int, parseInt(item.IdRenglonGestion) || null);
+
+              await requestDeta.query(detailQuery);
+            }
+          }
+        }
         await transaction.commit();
         return true;
       }

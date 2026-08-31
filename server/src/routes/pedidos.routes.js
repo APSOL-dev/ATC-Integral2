@@ -424,15 +424,16 @@ router.post('/', (req, res, next) => {
       
       await supabaseService.upsertRow('atc_pedidos_v', pedidoData);
       
-      const detailObjects = detalles.map(item => {
+      const detailObjects = (detalles || []).map((item, idx) => {
         const precio = parseCurrency(item.Precio);
         const cant = parseCurrency(item.Cantidad);
         const desc = parseCurrency(item.Descuento);
         const subtotal = precio * cant;
+        const seq = String(idx + 1).padStart(3, '0');
         
         return {
           IDPedido: newId,
-          IDDetalle: `${newId}${item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo'] || ''}`.replace(/\D/g, ''),
+          IDDetalle: `${newId}${seq}`,
           'Codigo (más alla de si es item o nombre)': item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo'] || '',
           'Nombre (más alla de si es item o nombre)': item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '',
           'Item  codigo': item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo'] || '',
@@ -449,7 +450,13 @@ router.post('/', (req, res, next) => {
       });
 
       if (detailObjects.length > 0) {
-        await supabaseService.insertRows('atc_detalles_pedidos_v', detailObjects);
+        try {
+          await supabaseService.insertRows('atc_detalles_pedidos_v', detailObjects);
+        } catch (detailErr) {
+          console.error('Error inserting details into Supabase, rolling back order header:', detailErr);
+          await supabaseService.deleteRows('atc_pedidos_v', { IDPedido: newId }).catch(() => {});
+          throw detailErr;
+        }
       }
 
       invalidatePedidosCache();
@@ -517,6 +524,10 @@ router.patch('/:id/estado', async (req, res, next) => {
       const allDetalles = await supabaseService.getRows('atc_detalles_pedidos_v');
       const detalles = allDetalles.filter(d => String(d.IDPedido) === String(pedidoId));
       
+      if (!detalles || detalles.length === 0) {
+        return res.status(400).json({ message: 'No se puede enviar un pedido sin detalles a la base de datos' });
+      }
+      
       await withRetry(() => mssqlService.createPedidoInDB(pedidoObj, detalles), 4, 1000, true);
     }
     
@@ -573,15 +584,16 @@ router.put('/:id', async (req, res, next) => {
     const dbPedidos = await mssqlService.getPedidosFromDB().catch(() => []);
     const dbPedido = dbPedidos.find(p => String(p.IDPedido) === String(pedidoId));
     
-    const newDetailRows = detalles.map(item => {
+    const newDetailRows = (detalles || []).map((item, idx) => {
       const precio = parseCurrency(item.Precio);
       const cant = parseCurrency(item.Cantidad);
       const desc = parseCurrency(item.Descuento);
       const subtotal = precio * cant;
+      const seq = String(idx + 1).padStart(3, '0');
       
       return {
         IDPedido: pedidoId,
-        IDDetalle: `${pedidoId}${item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo'] || ''}`.replace(/\D/g, ''),
+        IDDetalle: `${pedidoId}${seq}`,
         'Codigo (más alla de si es item o nombre)': item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo'] || '',
         'Nombre (más alla de si es item o nombre)': item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '',
         'Item  codigo': item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo'] || '',

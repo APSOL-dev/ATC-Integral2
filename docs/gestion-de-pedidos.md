@@ -44,12 +44,22 @@ Permite la emisión, visualización y edición de los pedidos y presupuestos en 
 - **Tolerancia a Fallos de Conexión de Base de Datos:** Si SQL Server experimenta un corte o retraso excesivo (timeout) al sincronizar, el backend propaga el error (HTTP 5xx) en lugar de ocultarlo devolviendo una lista vacía. El frontend detecta la respuesta errónea e interrumpe la actualización del estado local, reteniendo en pantalla la última versión consistente de los pedidos y alertando únicamente mediante el cartel de estado del servidor en la cabecera.
   - *Verificado por:* [DataContext.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/COPIA%20ATC%20Migraci%C3%B3n/client/src/context/DataContext.test.jsx)
 
+### 5. Integridad y Prevención de Pedidos sin Detalles
+- **Generación Secuencial e Infalible de Renglones (`IDDetalle`):** Para evitar colisiones causadas por códigos de productos alfanuméricos o caracteres especiales, el identificador único de cada renglón (`IDDetalle`) se genera asignando una secuencia infalible por posición (`IDPedido + número de renglón de 3 dígitos`, p. ej. `110195001`, `110195002`).
+  - *Verificado por:* [pedidos_detalles_safety.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/server/test/pedidos_detalles_safety.test.js)
+- **Rollback Atómico en Supabase:** Si la inserción de los detalles de un pedido en Supabase falla por cualquier motivo durante la creación (`POST /pedidos`), la cabecera recién creada se elimina automáticamente para no dejar borradores huérfanos sin artículos en el sistema.
+- **Bloqueo Preventivo de Envío a BD:** Al intentar cambiar el estado de un pedido a `'1'` ("Confirmar / Enviar a BD"), el servidor valida que el pedido tenga al menos 1 renglón cargado. Si carece de detalles, el envío es rechazado inmediatamente con error HTTP 400.
+  - *Verificado por:* [pedidos_detalles_safety.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/server/test/pedidos_detalles_safety.test.js)
+- **Autoreparación de Renglones en SQL Server:** Si la cabecera de un pedido ya existe en SQL Server (`PedidoAppCabe`) pero su desglose en `PedidoAppDeta` se encuentra totalmente vacío, la sincronización reinserta automáticamente los detalles faltantes en lugar de omitir la operación.
+
 ---
 
 ## Casos borde conocidos
 
 - **Intento de Envío sin Cliente:** Al presionar "Generar Pedido" sin seleccionar un cliente, el formulario bloquea el envío y muestra la alerta del navegador `"Seleccione un cliente"`.
   - *Verificado por:* [PedidoForm.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/pedidos/PedidoForm.test.jsx)
+- **Intento de Enviar Pedido sin Detalles a BD:** Si un borrador no posee artículos asociados e intenta confirmarse (estado 1), la API devuelve un código de estado `400 Bad Request` indicando que no se puede enviar un pedido sin detalles.
+  - *Verificado por:* [pedidos_detalles_safety.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/server/test/pedidos_detalles_safety.test.js)
 - **Descuento Vacío o No Numérico:** Si el campo de descuento se vacía o contiene un valor inválido, el sistema procesa el total utilizando un descuento del `0%` por defecto de forma segura.
   - *Verificado por:* [PedidoForm.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/pedidos/PedidoForm.test.jsx)
 - **Baja Lógica sin ID Asignado:** Si un pedido temporal (u optimista) no posee ID asignado por Sheets todavía, la grilla del listado muestra el mensaje parpadeante `"Guardando..."` para advertir al vendedor que se está sincronizando con el servidor.
@@ -64,3 +74,4 @@ Permite la emisión, visualización y edición de los pedidos y presupuestos en 
   - Los borradores y modificaciones se guardan inmediatamente en las vistas públicas de Supabase (`public.atc_pedidos_v` y `public.atc_detalles_pedidos_v`), ejecutando los triggers de esquema privado `"atc_migración"`.
   - El backend sanitiza automáticamente cualquier campo no presente en la vista o cadenas vacías `""` enviadas en fechas o enteros (`Fecha de envio`, `Nro_PedidoGestion`, `Nro_PedidoReferencia`, `Cliente`, `Vendedor`), convirtiéndolas en valores `NULL` seguros para PostgreSQL.
   - Al confirmarse el pedido (Estado 1), se persiste automáticamente en las tablas transaccionales de SQL Server (`AppTransacciones.PedidoAppCabe` y `PedidoAppDeta`).
+
