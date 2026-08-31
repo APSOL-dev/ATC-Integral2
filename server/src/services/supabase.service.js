@@ -96,18 +96,31 @@ async function getRows(viewName) {
     return cached.data;
   }
 
-  const { data, error } = await supabase
-    .from(tableName)
-    .select('*');
+  let allRows = [];
+  let page = 0;
+  const pageSize = 1000;
+  const orderCol = tableName.includes('Detalles') || tableName.includes('detalles') ? 'IDDetalle' : (tableName.includes('Usuarios') ? 'id' : 'IDPedido');
 
-  if (error) {
-    console.error(`Error fetching from Supabase view ${tableName}:`, error.message);
-    throw error;
+  while (true) {
+    const { data, error } = await supabase
+      .from(tableName)
+      .select('*')
+      .order(orderCol, { ascending: false })
+      .range(page * pageSize, (page + 1) * pageSize - 1);
+
+    if (error) {
+      console.error(`Error fetching from Supabase view ${tableName}:`, error.message);
+      throw error;
+    }
+
+    if (!data || data.length === 0) break;
+    allRows = allRows.concat(data);
+    if (data.length < pageSize) break;
+    page++;
   }
 
-  const result = data || [];
-  cache.set(tableName, { data: result, timestamp: now });
-  return result;
+  cache.set(tableName, { data: allRows, timestamp: now });
+  return allRows;
 }
 
 /**
