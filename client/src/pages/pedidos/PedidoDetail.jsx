@@ -99,7 +99,10 @@ export default function PedidoDetail() {
           'Content-Type': 'application/json',
           ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {})
         },
-        body: JSON.stringify({ estado: nuevoEstado })
+        body: JSON.stringify({ 
+          estado: nuevoEstado,
+          detalles: pedido?.detalles || []
+        })
       })
         .then(async res => {
           setIsSending(false)

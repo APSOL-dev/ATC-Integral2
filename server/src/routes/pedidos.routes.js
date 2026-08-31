@@ -521,9 +521,43 @@ router.patch('/:id/estado', async (req, res, next) => {
     pedidoObj.Fecha_Ultima_Modificacion = now.toISOString();
     
     if (cleanStatus === '1' || cleanStatus === '1.' || cleanStatus === '0.0.99') {
-      const allDetalles = await supabaseService.getRows('atc_detalles_pedidos_v');
-      const detalles = allDetalles.filter(d => String(d.IDPedido) === String(pedidoId));
+      let allDetalles = await supabaseService.getRows('atc_detalles_pedidos_v');
+      let detalles = allDetalles.filter(d => String(d.IDPedido) === String(pedidoId));
       
+      // Auto-recovery: If Supabase has 0 details but client payload provided details, auto-persist to Supabase first!
+      if ((!detalles || detalles.length === 0) && req.body.detalles && req.body.detalles.length > 0) {
+        console.log(`[AUTO-RECOVERY] Auto-persisting ${req.body.detalles.length} details to Supabase for IDPedido ${pedidoId}`);
+        const sanitizedDetails = req.body.detalles.map((item, idx) => {
+          const precio = parseCurrency(item.Precio);
+          const cant = parseCurrency(item.Cantidad);
+          const desc = parseCurrency(item.Descuento);
+          const subtotal = precio * cant;
+          const seq = String(idx + 1).padStart(3, '0');
+          
+          return {
+            IDPedido: pedidoId,
+            IDDetalle: `${pedidoId}${seq}`,
+            'Codigo (más alla de si es item o nombre)': item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo'] || item.CODART || '',
+            'Nombre (más alla de si es item o nombre)': item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || item.DESCRI || '',
+            'Item  codigo': item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo'] || item.CODART || '',
+            'Nombre item': item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || item.DESCRI || '',
+            'Cantidad': cant,
+            'Descuento': desc,
+            'Precio': precio,
+            'Subtotal (precio x cantidad)': subtotal,
+            'Monto del descuento': 0,
+            'Total (subtotal - monto del descuento)': subtotal,
+            'Stock al momento de cargar': parseCurrency(item.StockAvailable || item.StockActual),
+            'Proveedor': item.Proveedor || ''
+          };
+        });
+        
+        await supabaseService.insertRows('atc_detalles_pedidos_v', sanitizedDetails).catch(err => {
+          console.error('Error in auto-persisting details during status change:', err.message);
+        });
+        detalles = sanitizedDetails;
+      }
+
       if (!detalles || detalles.length === 0) {
         return res.status(400).json({ message: 'No se puede enviar un pedido sin detalles a la base de datos' });
       }
