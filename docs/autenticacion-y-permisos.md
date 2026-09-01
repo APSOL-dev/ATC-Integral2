@@ -48,6 +48,8 @@ Gestiona el control de acceso al sistema, la autenticación mediante tokens firm
 - **Vendedor Calle sin Legajo Asignado:** Si un vendedor calle tiene configurado su perfil pero su `nroVendedor` en Sheets es nulo o vacío, la interfaz filtra sus clientes y pedidos devolviendo una lista vacía por seguridad, en lugar de arruinar el filtrado o filtrar erróneamente de forma global.
   - *Verificado por:* [visibilidadVendedor.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/pedidos/visibilidadVendedor.test.jsx)
 - **Normalización Dinámica de Columnas en Sheets:** Si faltan las columnas `'NRO_VENDEDOR'` o `'Activo'` en la hoja de Sheets debido a modificaciones externas manuales, el backend detecta su ausencia al cargar o escribir y las crea dinámicamente antes de procesar el ABM para evitar corrupciones.
+- **Mapeo e Indización en Vistas Públicas de Supabase (`atc_usuarios_v`):** Las consultas de lectura (`getRows`) e inserciones/actualizaciones en la vista de usuarios en Supabase resolviendo por `atc_usuarios_v` se mapean de forma case-insensitive y se ordenan por la columna de clave primaria correspondiente (`'Nombre de usuario'`), evitando excepciones por columnas inexistentes como `IDPedido` o `id`.
+  - *Verificado por:* [supabase.service.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/server/test/supabase.service.test.js)
 
 ---
 
@@ -55,3 +57,4 @@ Gestiona el control de acceso al sistema, la autenticación mediante tokens firm
 
 - **Unicidad:** La clave de identidad del usuario es su nombre (insensible a mayúsculas/minúsculas y normalizado de espacios).
 - **Vigencia:** El token JWT tiene una duración de validez estricta de 24 horas. Expirado este lapso, la app obliga al usuario a autenticarse de nuevo.
+

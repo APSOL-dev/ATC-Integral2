@@ -80,11 +80,12 @@ function sanitizeRow(tableName, rowObj) {
  */
 async function getRows(viewName) {
   let tableName = 'atc_usuarios_v';
-  if (viewName.includes('Usuarios')) {
+  const lowerViewName = String(viewName || '').toLowerCase();
+  if (lowerViewName.includes('usuarios')) {
     tableName = 'atc_usuarios_v';
-  } else if (viewName.includes('Detalles')) {
+  } else if (lowerViewName.includes('detalles')) {
     tableName = 'atc_detalles_pedidos_v';
-  } else if (viewName.includes('Pedidos')) {
+  } else if (lowerViewName.includes('pedidos')) {
     tableName = 'atc_pedidos_v';
   } else {
     tableName = viewName;
@@ -99,7 +100,10 @@ async function getRows(viewName) {
   let allRows = [];
   let page = 0;
   const pageSize = 1000;
-  const orderCol = tableName.includes('Detalles') || tableName.includes('detalles') ? 'IDDetalle' : (tableName.includes('Usuarios') ? 'id' : 'IDPedido');
+  const lowerTableName = tableName.toLowerCase();
+  const orderCol = lowerTableName.includes('detalles')
+    ? 'IDDetalle'
+    : (lowerTableName.includes('usuarios') ? 'Nombre de usuario' : 'IDPedido');
 
   while (true) {
     const { data, error } = await supabase
@@ -131,11 +135,12 @@ async function getRows(viewName) {
 async function upsertRow(viewName, rowData) {
   clearCache();
   let tableName = 'atc_usuarios_v';
-  if (viewName.includes('Usuarios')) {
+  const lowerViewName = String(viewName || '').toLowerCase();
+  if (lowerViewName.includes('usuarios')) {
     tableName = 'atc_usuarios_v';
-  } else if (viewName.includes('Detalles')) {
+  } else if (lowerViewName.includes('detalles')) {
     tableName = 'atc_detalles_pedidos_v';
-  } else if (viewName.includes('Pedidos')) {
+  } else if (lowerViewName.includes('pedidos')) {
     tableName = 'atc_pedidos_v';
   } else {
     tableName = viewName;
@@ -163,11 +168,12 @@ async function insertRows(viewName, rowsData) {
   if (!Array.isArray(rowsData) || rowsData.length === 0) return [];
 
   let tableName = 'atc_usuarios_v';
-  if (viewName.includes('Usuarios')) {
+  const lowerViewName = String(viewName || '').toLowerCase();
+  if (lowerViewName.includes('usuarios')) {
     tableName = 'atc_usuarios_v';
-  } else if (viewName.includes('Detalles')) {
+  } else if (lowerViewName.includes('detalles')) {
     tableName = 'atc_detalles_pedidos_v';
-  } else if (viewName.includes('Pedidos')) {
+  } else if (lowerViewName.includes('pedidos')) {
     tableName = 'atc_pedidos_v';
   } else {
     tableName = viewName;
@@ -194,11 +200,12 @@ async function insertRows(viewName, rowsData) {
 async function updateRows(viewName, matchFilter, updateData) {
   clearCache();
   let tableName = 'atc_usuarios_v';
-  if (viewName.includes('Usuarios')) {
+  const lowerViewName = String(viewName || '').toLowerCase();
+  if (lowerViewName.includes('usuarios')) {
     tableName = 'atc_usuarios_v';
-  } else if (viewName.includes('Detalles')) {
+  } else if (lowerViewName.includes('detalles')) {
     tableName = 'atc_detalles_pedidos_v';
-  } else if (viewName.includes('Pedidos')) {
+  } else if (lowerViewName.includes('pedidos')) {
     tableName = 'atc_pedidos_v';
   } else {
     tableName = viewName;
@@ -226,11 +233,12 @@ async function updateRows(viewName, matchFilter, updateData) {
 async function deleteRows(viewName, matchFilter) {
   clearCache();
   let tableName = 'atc_usuarios_v';
-  if (viewName.includes('Usuarios')) {
+  const lowerViewName = String(viewName || '').toLowerCase();
+  if (lowerViewName.includes('usuarios')) {
     tableName = 'atc_usuarios_v';
-  } else if (viewName.includes('Detalles')) {
+  } else if (lowerViewName.includes('detalles')) {
     tableName = 'atc_detalles_pedidos_v';
-  } else if (viewName.includes('Pedidos')) {
+  } else if (lowerViewName.includes('pedidos')) {
     tableName = 'atc_pedidos_v';
   } else {
     tableName = viewName;
