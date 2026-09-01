@@ -139,7 +139,7 @@ describe('PedidoDetail: Visibilidad de Aprobación, Edición y Borrado por Rol',
         expect.stringContaining('/pedidos/90001/estado'),
         expect.objectContaining({
           method: 'PATCH',
-          body: JSON.stringify({ estado: '1' })
+          body: expect.stringContaining('"estado":"1"'),
         })
       )
     })

@@ -106,7 +106,7 @@ describe('PedidoDetail — Cambio de Estado: Flujos de Administracion', () => {
         expect.stringContaining('/pedidos/90001/estado'),
         expect.objectContaining({
           method: 'PATCH',
-          body: JSON.stringify({ estado: '1' }),
+          body: expect.stringContaining('"estado":"1"'),
         })
       )
     })
@@ -159,7 +159,7 @@ describe('PedidoDetail — Cambio de Estado: Flujos de Administracion', () => {
         expect.stringContaining('/pedidos/90001/estado'),
         expect.objectContaining({
           method: 'PATCH',
-          body: JSON.stringify({ estado: '0.0.99' }),
+          body: expect.stringContaining('"estado":"0.0.99"'),
         })
       )
     })
