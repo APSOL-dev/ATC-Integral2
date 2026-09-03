@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { X, Search, Plus, Trash2, Save, ShoppingCart, Tag, MapPin, AlignLeft } from 'lucide-react'
+import { X, Search, Plus, Trash2, Save, ShoppingCart, Tag, MapPin, AlignLeft, Type, Hash } from 'lucide-react'
 import { formatCurrency, parseCurrency } from '../../utils/format.js'
 import { useData } from '../../context/DataContext.jsx'
 import { matchProductSearch } from '../../utils/productSearch.js'
@@ -9,6 +9,7 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
   const [loading, setLoading] = useState(false)
   const { productos } = useData()
   const [productSearch, setProductSearch] = useState('')
+  const [searchMode, setSearchMode] = useState('nombre') // 'nombre' | 'codigo'
   const [showProductResults, setShowProductResults] = useState(false)
   const [activeProductIndex, setActiveProductIndex] = useState(-1)
   const productRef = useRef(null)
@@ -56,8 +57,8 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
 
   const filteredProductos = useMemo(() => {
     if (!productSearch) return productos.slice(0, 150)
-    return productos.filter(p => matchProductSearch(p, productSearch)).slice(0, 150) // Limitar a 150 para rendimiento
-  }, [productSearch, productos])
+    return productos.filter(p => matchProductSearch(p, productSearch, searchMode)).slice(0, 150) // Limitar a 150 para rendimiento
+  }, [productSearch, productos, searchMode])
 
   const handleProductKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
@@ -218,13 +219,51 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
 
           {/* Buscador de Productos */}
           <div className="space-y-4">
-            <label className="text-xs font-bold text-[#0f5da9] uppercase tracking-widest flex items-center gap-2"><ShoppingCart size={14}/> Agregar Productos</label>
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[#0f5da9] uppercase tracking-widest flex items-center gap-2"><ShoppingCart size={14}/> Agregar Productos</label>
+              
+              {/* Selector Modo de Búsqueda */}
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/60 select-none">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchMode('nombre')
+                    setActiveProductIndex(-1)
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+                    searchMode === 'nombre'
+                      ? 'bg-[#0f5da9] text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                  }`}
+                >
+                  <Type size={12} />
+                  <span>Por Nombre</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchMode('codigo')
+                    setActiveProductIndex(-1)
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+                    searchMode === 'codigo'
+                      ? 'bg-[#0f5da9] text-white shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                  }`}
+                >
+                  <Hash size={12} />
+                  <span>Por Código SKU</span>
+                </button>
+              </div>
+            </div>
+
             <div className="relative" ref={productRef}>
               <div className="relative">
                 <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder="Buscar por código o descripción..."
+                  placeholder={searchMode === 'codigo' ? 'Ingrese código numérico de artículo (SKU)...' : 'Buscar por descripción, marca o rubro...'}
                   value={productSearch}
                   onChange={(e) => {
                     setProductSearch(e.target.value)

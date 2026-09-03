@@ -58,7 +58,7 @@ const UNIQUE_ICONS = [
   'Printer',       'RefreshCw',     'Save',            'Search',
   'Settings',      'Shield',        'ShieldAlert',     'ShoppingBag',
   'ShoppingCart',  'Tag',           'Trash2',          'TrendingDown',
-  'TrendingUp',    'Truck',         'User',            'UserCheck',
+  'TrendingUp',    'Truck',         'Type',            'User',            'UserCheck',
   'UserPlus',      'Users',         'X'
 ]
 

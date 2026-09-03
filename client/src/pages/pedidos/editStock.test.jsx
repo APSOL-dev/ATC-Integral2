@@ -54,7 +54,7 @@ describe('EditPedidoModal: Visualización y Colores del Stock de Productos', () 
       />
     )
 
-    const searchInput = screen.getByPlaceholderText(/Buscar por código o descripción/i)
+    const searchInput = screen.getByPlaceholderText(/descripción/i)
 
     // === PROBAR PRODUCTO CON STOCK POSITIVO (45) ===
     fireEvent.change(searchInput, { target: { value: 'Látex' } })

@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { 
   ArrowLeft, Search, Plus, Trash2, Package, User, 
   MapPin, Calendar, ClipboardList, Save, X, Info, ShoppingCart,
-  Phone, Tag, Hash, Layers
+  Phone, Tag, Hash, Layers, Type
 } from 'lucide-react'
 import { formatCurrency, parseCurrency } from '../../utils/format.js'
 import { useAuth } from '../../context/AuthContext.jsx'
@@ -39,6 +39,7 @@ export default function PedidoForm() {
   // Search states
   const [clientSearch, setClientSearch] = useState('')
   const [productSearch, setProductSearch] = useState('')
+  const [searchMode, setSearchMode] = useState('nombre') // 'nombre' | 'codigo'
   const [showClientResults, setShowClientResults] = useState(false)
   const [showProductResults, setShowProductResults] = useState(false)
   const [activeProductIndex, setActiveProductIndex] = useState(-1)
@@ -112,8 +113,8 @@ export default function PedidoForm() {
   }, [clientSearch, clientes, user])
 
   const filteredProducts = useMemo(() => {
-    return productos.filter(p => matchProductSearch(p, productSearch)).slice(0, 150)
-  }, [productSearch, productos])
+    return productos.filter(p => matchProductSearch(p, productSearch, searchMode)).slice(0, 150)
+  }, [productSearch, productos, searchMode])
 
   const handleProductKeyDown = (e) => {
     if (e.key === 'ArrowDown') {
@@ -491,6 +492,41 @@ export default function PedidoForm() {
             </h2>
 
             <div className="relative mb-10" ref={productRef}>
+              {/* Selector Modo de Búsqueda */}
+              <div className="flex items-center gap-2 mb-4 bg-slate-100/80 p-1.5 rounded-2xl w-fit border border-slate-200/60 select-none">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchMode('nombre')
+                    setActiveProductIndex(-1)
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+                    searchMode === 'nombre'
+                      ? 'bg-[#0f5da9] text-white shadow-md shadow-[#0f5da9]/20'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                  }`}
+                >
+                  <Type size={14} />
+                  <span>Por Nombre / Marca / Rubro</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchMode('codigo')
+                    setActiveProductIndex(-1)
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all cursor-pointer ${
+                    searchMode === 'codigo'
+                      ? 'bg-[#0f5da9] text-white shadow-md shadow-[#0f5da9]/20'
+                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                  }`}
+                >
+                  <Hash size={14} />
+                  <span>Por Código SKU</span>
+                </button>
+              </div>
+
               <div className="relative group">
                 <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#0f5da9] transition-colors" />
                 <input
@@ -503,7 +539,7 @@ export default function PedidoForm() {
                   }}
                   onFocus={() => setShowProductResults(true)}
                   onKeyDown={handleProductKeyDown}
-                  placeholder="Código o descripción del producto..."
+                  placeholder={searchMode === 'codigo' ? 'Ingrese código numérico de artículo (SKU)...' : 'Buscar por descripción, marca o rubro del producto...'}
                   className="w-full pl-14 pr-6 py-5 bg-slate-50 border border-slate-200 rounded-[1.5rem] text-[15px] font-bold text-[#1e293b] focus:ring-8 focus:ring-[#0f5da9]/5 focus:border-[#0f5da9] transition-all outline-none"
                 />
               </div>

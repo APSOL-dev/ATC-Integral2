@@ -42,4 +42,14 @@ describe('matchProductSearch utility', () => {
     expect(matchProductSearch(productWithRubro, 'sintéticos')).toBe(true)
     expect(matchProductSearch(productWithRubro, 'Pinturas')).toBe(true)
   })
+
+  it('en modo "nombre" no debería buscar en el código si se desactiva la coincidencia por código', () => {
+    expect(matchProductSearch(sampleProduct, '10045', 'nombre')).toBe(false)
+    expect(matchProductSearch(sampleProduct, 'esm', 'nombre')).toBe(true)
+  })
+
+  it('en modo "codigo" solo debería buscar por código de artículo', () => {
+    expect(matchProductSearch(sampleProduct, '10045', 'codigo')).toBe(true)
+    expect(matchProductSearch(sampleProduct, 'esm', 'codigo')).toBe(false)
+  })
 })

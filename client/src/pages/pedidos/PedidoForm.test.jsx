@@ -108,7 +108,7 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
     fireEvent.click(clientOption)
 
     // 3. Buscar y agregar producto
-    const productInput = screen.getByPlaceholderText('Código o descripción del producto...')
+    const productInput = screen.getByPlaceholderText(/descripción/i)
     fireEvent.change(productInput, { target: { value: 'Látex' } })
     
     // Seleccionar producto en el dropdown
@@ -157,7 +157,7 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
   it('Debería ordenar los productos agregados situando el más reciente al principio de la tabla', () => {
     render(<PedidoForm />)
 
-    const productInput = screen.getByPlaceholderText('Código o descripción del producto...')
+    const productInput = screen.getByPlaceholderText(/descripción/i)
     
     // 1. Agregar Producto 1 (Látex)
     fireEvent.change(productInput, { target: { value: 'Látex' } })
@@ -186,7 +186,7 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
     render(<PedidoForm />)
 
     // Agregar producto sin buscar ni seleccionar cliente
-    const productInput = screen.getByPlaceholderText('Código o descripción del producto...')
+    const productInput = screen.getByPlaceholderText(/descripción/i)
     fireEvent.change(productInput, { target: { value: 'Látex' } })
     const productOption = screen.getByText('Látex Interior Blanco 20L')
     fireEvent.click(productOption)
@@ -218,7 +218,7 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
     fireEvent.click(clientOption)
 
     // Agregar producto
-    const productInput = screen.getByPlaceholderText('Código o descripción del producto...')
+    const productInput = screen.getByPlaceholderText(/descripción/i)
     fireEvent.change(productInput, { target: { value: 'Látex' } })
     const productOption = screen.getByText('Látex Interior Blanco 20L')
     fireEvent.click(productOption)
