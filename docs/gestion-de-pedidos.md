@@ -12,7 +12,7 @@ Permite la emisión, visualización y edición de los pedidos y presupuestos en 
   - *Verificado por:* [PedidoForm.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/pedidos/PedidoForm.test.jsx)
 - **Cálculo de Subtotales y Totales:** Calcula dinámicamente el precio de cada fila (Cantidad x Precio) y actualiza el Importe Neto Final en tiempo real.
   - *Verificado por:* [PedidoForm.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/pedidos/PedidoForm.test.jsx)
-- **Descuentos Globales:** Permite ingresar un porcentaje de descuento (ej: 10%), calculando el monto descontado y actualizando el Importe Neto Final.
+- **Descuentos Globales:** Se inicializa de forma preestablecida en `19%` al abrir el formulario de emisión de nuevo pedido, permitiendo al usuario modificarlo libremente o dejarlo en 0. Calcula el monto descontado y actualiza el Importe Neto Final en tiempo real.
   - *Verificado por:* [PedidoForm.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/pedidos/PedidoForm.test.jsx)
 - **Envío en Segundo Plano:** El formulario serializa un JSON estructurado con la cabecera del pedido (`header`) y el desglose de productos (`detalles`) enviándolo a la API (`POST /pedidos`).
   - *Verificado por:* [PedidoForm.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/pedidos/PedidoForm.test.jsx)

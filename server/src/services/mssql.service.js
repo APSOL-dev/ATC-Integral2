@@ -148,13 +148,13 @@ async function getProductos(search = '') {
     let query;
     if (search) {
       const s = search.replace(/'/g, "''");
-      query = `SELECT CODART, DESCRI, CC_CIVA, stock, NombreFamilia, NombreMarca, Proveedor 
+      query = `SELECT CODART, DESCRI, CC_CIVA, stock, FAMILIA, NombreFamilia, RUBRO, NombreRubro, MARCA, NombreMarca, Embalaje, Proveedor 
                FROM App.Productos 
                WHERE DESCRI LIKE '%${s}%' 
                   OR CAST(CODART AS VARCHAR) LIKE '%${s}%'
                ORDER BY DESCRI`;
     } else {
-      query = 'SELECT CODART, DESCRI, CC_CIVA, stock, NombreFamilia, NombreMarca, Proveedor FROM App.Productos ORDER BY DESCRI';
+      query = 'SELECT CODART, DESCRI, CC_CIVA, stock, FAMILIA, NombreFamilia, RUBRO, NombreRubro, MARCA, NombreMarca, Embalaje, Proveedor FROM App.Productos ORDER BY DESCRI';
     }
     const result = await pool.request().query(query);
     return result.recordset;

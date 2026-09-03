@@ -129,7 +129,7 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
     expect(screen.getAllByText(/8\.500/).length).toBeGreaterThan(0)
 
     // 5. Aplicar un descuento del 10%
-    const discountInput = screen.getByPlaceholderText('0')
+    const discountInput = screen.getByPlaceholderText('19')
     fireEvent.change(discountInput, { target: { value: '10' } })
 
     // Validar monto de descuento final (-$850) e Importe Neto Final ($7.650) en el DOM
@@ -224,7 +224,7 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
     fireEvent.click(productOption)
 
     // Dejar descuento vacío/vaciarlo
-    const discountInput = screen.getByPlaceholderText('0')
+    const discountInput = screen.getByPlaceholderText('19')
     fireEvent.change(discountInput, { target: { value: '' } })
 
     // Enviar
@@ -240,5 +240,11 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
         })
       )
     })
+  })
+
+  it('debería inicializar el porcentaje de descuento en 19 por defecto en la creación de un nuevo pedido', () => {
+    render(<PedidoForm />)
+    const discountInput = screen.getByPlaceholderText('19') || screen.getByDisplayValue('19')
+    expect(discountInput).toHaveValue(19)
   })
 })

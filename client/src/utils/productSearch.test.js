@@ -32,4 +32,14 @@ describe('matchProductSearch utility', () => {
     expect(matchProductSearch(sampleProduct, 'esm blanco')).toBe(false)
     expect(matchProductSearch(sampleProduct, 'latex net')).toBe(false)
   })
+
+  it('debería encontrar coincidencia por NombreRubro o RUBRO', () => {
+    const productWithRubro = {
+      ...sampleProduct,
+      NombreRubro: 'Sintéticos y Barnices',
+      RUBRO: 'Pinturas de Obra'
+    }
+    expect(matchProductSearch(productWithRubro, 'sintéticos')).toBe(true)
+    expect(matchProductSearch(productWithRubro, 'Pinturas')).toBe(true)
+  })
 })

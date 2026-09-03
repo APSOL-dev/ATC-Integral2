@@ -100,8 +100,8 @@ export default function App() {
 
               {/* Pedidos */}
               <Route path="pedidos" element={<PedidosList />} />
-              <Route path="pedidos/:id" element={<PedidoDetail />} />
               <Route path="pedidos/nuevo" element={<PedidoForm />} />
+              <Route path="pedidos/:id" element={<PedidoDetail />} />
               <Route path="pedidos/:id/editar" element={<PlaceholderPage title="Editar Pedido" />} />
 
               {/* Clientes */}
@@ -110,8 +110,8 @@ export default function App() {
 
               {/* Productos */}
               <Route path="productos" element={<ProductosCatalog />} />
-              <Route path="productos/:id" element={<ProductoDetail />} />
               <Route path="productos/presupuestos" element={<PresupuestosStock />} />
+              <Route path="productos/:id" element={<ProductoDetail />} />
 
 
               {/* Admin */}

@@ -8,8 +8,8 @@ import {
 import { formatCurrency, formatDateTime, formatDate, getStatusConfig, calcEstadoBadge, parseCurrency } from '../../utils/format.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { useData } from '../../context/DataContext.jsx'
-import StatusBadge from '../../components/shared/StatusBadge.jsx'
 import { puedeDo } from '../../utils/permisos.js'
+import { matchProductSearch } from '../../utils/productSearch.js'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -68,8 +68,7 @@ export default function ClienteDetail() {
   const [generalDiscount, setGeneralDiscount] = useState(0)
 
   const filteredProducts = availableProducts.filter(p => 
-    (p.DESCRI || '').toLowerCase().includes(productSearch.toLowerCase()) ||
-    (p.CODART || '').toLowerCase().includes(productSearch.toLowerCase())
+    matchProductSearch(p, productSearch)
   ).slice(0, 50)
 
   const toggleProduct = (prod) => {
@@ -399,7 +398,7 @@ export default function ClienteDetail() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-[11px] font-bold text-[#1e293b] line-clamp-1">{p.DESCRI}</p>
-                            <p className="text-[9px] font-bold text-slate-400 uppercase">{p.CODART} • {formatCurrency(p.CC_CIVA || p.PRECIO || 0)}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase">{p.CODART}{(p.NombreRubro || p.Rubro) ? ` • Rubro: ${p.NombreRubro || p.Rubro}` : ''} • {formatCurrency(p.CC_CIVA || p.PRECIO || 0)}</p>
                           </div>
                         </div>
                       </div>

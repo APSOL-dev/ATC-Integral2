@@ -8,7 +8,7 @@ Expone el catálogo de artículos disponibles en la distribuidora de pinturas. O
 ## Escenarios cubiertos
 
 ### 1. Búsqueda y Filtrado General
-- **Búsqueda por Texto Flexibilizada:** Permite ingresar palabras clave múltiples sueltas o desordenadas (separadas por espacio o por el carácter `+`), o el código de artículo. El sistema valida que todas las palabras buscadas estén presentes dentro del título/descripción, marca, proveedor o código del artículo, aplicando un debounce de 400ms.
+- **Búsqueda por Texto Flexibilizada:** Permite ingresar palabras clave múltiples sueltas o desordenadas (separadas por espacio o por el carácter `+`), o el código de artículo. El sistema valida que todas las palabras buscadas estén presentes dentro del título/descripción, marca, proveedor, rubro (`NombreRubro` / `RUBRO`) o código del artículo, aplicando un debounce de 400ms.
   - *Verificado por:* [productosFiltros.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/productos/productosFiltros.test.jsx) y [productSearch.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/utils/productSearch.test.js)
 
 ### 2. Filtro de Stock Disponible
@@ -16,8 +16,8 @@ Expone el catálogo de artículos disponibles en la distribuidora de pinturas. O
   - *Verificado por:* [productosFiltros.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/productos/productosFiltros.test.jsx)
 
 ### 3. Filtros Avanzados
-- **Filtrado por Proveedor:** Permite desplegar la lista de proveedores sugeridos y seleccionar un fabricante en específico (ej. "Sinteplast SA"), visualizando solo los productos distribuidos por este.
-  - *Verificado por:* [productosFiltros.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/productos/productosFiltros.test.jsx)
+- **Filtrado por Proveedor, Familia, Marca y Rubro:** Permite desplegar listas sugeridas independientes para filtrar por Proveedor, Familia, Marca o Rubro (`NombreRubro` / `RUBRO`), visualizando únicamente los productos pertenecientes a las selecciones realizadas.
+  - *Verificado por:* [productosFiltros.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/productos/productosFiltros.test.jsx) y [productSearch.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/utils/productSearch.test.js)
 
 ---
 

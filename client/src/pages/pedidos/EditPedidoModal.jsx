@@ -241,8 +241,8 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-slate-100 max-h-[350px] overflow-y-auto z-50 py-2 custom-scrollbar">
                   {filteredProductos.length > 0 ? (
                     filteredProductos.map((prod, index) => {
-                      const desc = prod.DESCRI || prod.DESCRIPCION || ''
-                      const marca = prod.MARCA || prod.NombreMarca || prod.Marca || ''
+                      const desc = String(prod.DESCRI || prod.DESCRIPCION || '')
+                      const marca = String(prod.NombreMarca || prod.Marca || (typeof prod.MARCA === 'string' ? prod.MARCA : '') || '')
                       const title = (marca && !desc.toLowerCase().includes(marca.toLowerCase())) ? `${desc} - ${marca}` : desc
                       return (
                       <div key={prod.CODART || prod.CODIGO} className={`px-5 py-4 flex items-center justify-between group cursor-pointer transition-colors border-b border-slate-50 last:border-0 ${index === activeProductIndex ? 'bg-[#0f5da9]/10' : 'hover:bg-slate-50'}`} onClick={() => handleAddItem(prod)}>
@@ -250,13 +250,17 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
                           <p className="font-bold text-[15px] text-[#1e293b] group-hover:text-[#0f5da9] transition-colors leading-snug">{title}</p>
                           <div className="flex flex-wrap items-center gap-4 mt-1.5">
                             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cód: {prod.CODART || prod.CODIGO}</span>
+                            {(prod.NombreRubro || prod.Rubro) && <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Rubro: {prod.NombreRubro || prod.Rubro}</span>}
                             <span className={`text-xs font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg ${(prod.stock || 0) > 0 ? 'text-emerald-700 bg-emerald-100 font-extrabold border border-emerald-300/60' : 'text-red-600 bg-red-100 font-bold border border-red-200'}`}>
                               Stock: {prod.stock || 0}
                             </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-4 shrink-0">
-                          <p className="font-bold text-[15px] text-[#0f5da9] tabular-nums">{formatCurrency(prod.CC_CIVA || prod.PRECIO_LISTA)}</p>
+                          <div className="text-right">
+                            <p className="font-bold text-[15px] text-[#0f5da9] tabular-nums">{formatCurrency(prod.CC_CIVA || prod.PRECIO_LISTA)}</p>
+                            {(prod.Embalaje || prod.EMBALAJE) && <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md uppercase">Emb: {prod.Embalaje || prod.EMBALAJE} u</span>}
+                          </div>
                           <button type="button" className="size-9 rounded-full bg-slate-100 text-[#0f5da9] flex items-center justify-center group-hover:bg-[#0f5da9] group-hover:text-white transition-colors shadow-sm">
                             <Plus size={18} />
                           </button>
@@ -289,8 +293,8 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
                 <tbody className="divide-y divide-slate-50">
                   {items.map((item, idx) => {
                     const code = item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo']
-                    const name = item['Nombre (más alla de si es item o nombre)'] || item['Nombre item']
-                    const itemMarca = item.Marca || item.MARCA || item.NombreMarca || ''
+                    const name = String(item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '')
+                    const itemMarca = String(item.NombreMarca || item.Marca || (typeof item.MARCA === 'string' ? item.MARCA : '') || '')
                     const title = (itemMarca && !name.toLowerCase().includes(itemMarca.toLowerCase())) ? `${name} - ${itemMarca}` : name
                     return (
                     <tr key={`${code}-${idx}`} className="hover:bg-slate-50/50 transition-colors">
@@ -298,6 +302,7 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
                         <p className="font-bold text-[15px] text-[#1e293b] leading-snug">{title}</p>
                         <div className="flex items-center gap-4 mt-1.5">
                           <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Cód: {code}</span>
+                          {(item.Embalaje || item.EMBALAJE) && <span className="text-xs font-semibold text-slate-400 uppercase"> • Emb: {item.Embalaje || item.EMBALAJE} u</span>}
                           <span className={`text-xs font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-lg ${(item.StockAvailable || 0) > 0 ? 'text-emerald-700 bg-emerald-100 border border-emerald-300/60 font-black' : 'text-red-600 bg-red-100 font-bold'}`}>
                             Stock: {item.StockAvailable || 0}
                           </span>

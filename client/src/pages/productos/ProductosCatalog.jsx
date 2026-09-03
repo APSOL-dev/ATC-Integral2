@@ -39,6 +39,11 @@ export default function ProductosCatalog() {
   const [showMarcaList, setShowMarcaList] = useState(false)
   const marcaRef = useRef(null)
 
+  const [filtroRubro, setFiltroRubro] = useState('')
+  const [selectedRubros, setSelectedRubros] = useState([])
+  const [showRubroList, setShowRubroList] = useState(false)
+  const rubroRef = useRef(null)
+
   const debouncedSearch = useDebounce(search, 400)
 
   const productos = useMemo(() => {
@@ -55,6 +60,7 @@ export default function ProductosCatalog() {
       if (provRef.current && !provRef.current.contains(e.target)) setShowProveedorList(false)
       if (famRef.current && !famRef.current.contains(e.target)) setShowFamiliaList(false)
       if (marcaRef.current && !marcaRef.current.contains(e.target)) setShowMarcaList(false)
+      if (rubroRef.current && !rubroRef.current.contains(e.target)) setShowRubroList(false)
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -94,11 +100,20 @@ export default function ProductosCatalog() {
     } else if (filtroMarca) {
       result = result.filter(p => {
         const val = getField(p, 'NombreMarca', 'MARCA')
-        return val && val.toLowerCase().includes(filtroMarca.toLowerCase())
+        return val && String(val).toLowerCase().includes(filtroMarca.toLowerCase())
+      })
+    }
+
+    if (selectedRubros.length > 0) {
+      result = result.filter(p => selectedRubros.includes(getField(p, 'NombreRubro', 'RUBRO', 'Rubro')))
+    } else if (filtroRubro) {
+      result = result.filter(p => {
+        const val = getField(p, 'NombreRubro', 'RUBRO', 'Rubro')
+        return val && String(val).toLowerCase().includes(filtroRubro.toLowerCase())
       })
     }
     return result
-  }, [productos, soloConStock, filtroProveedor, selectedProveedores, filtroFamilia, selectedFamilias, filtroMarca, selectedMarcas])
+  }, [productos, soloConStock, filtroProveedor, selectedProveedores, filtroFamilia, selectedFamilias, filtroMarca, selectedMarcas, filtroRubro, selectedRubros])
 
   // Interdependent filter helpers to avoid drop-down dead-ends
   const filteredForProveedor = useMemo(() => {
@@ -112,8 +127,11 @@ export default function ProductosCatalog() {
     if (selectedMarcas.length > 0) {
       result = result.filter(p => selectedMarcas.includes(getField(p, 'NombreMarca', 'MARCA')))
     }
+    if (selectedRubros.length > 0) {
+      result = result.filter(p => selectedRubros.includes(getField(p, 'NombreRubro', 'RUBRO', 'Rubro')))
+    }
     return result
-  }, [productos, soloConStock, selectedFamilias, selectedMarcas])
+  }, [productos, soloConStock, selectedFamilias, selectedMarcas, selectedRubros])
 
   const filteredForFamilia = useMemo(() => {
     let result = productos
@@ -126,8 +144,11 @@ export default function ProductosCatalog() {
     if (selectedMarcas.length > 0) {
       result = result.filter(p => selectedMarcas.includes(getField(p, 'NombreMarca', 'MARCA')))
     }
+    if (selectedRubros.length > 0) {
+      result = result.filter(p => selectedRubros.includes(getField(p, 'NombreRubro', 'RUBRO', 'Rubro')))
+    }
     return result
-  }, [productos, soloConStock, selectedProveedores, selectedMarcas])
+  }, [productos, soloConStock, selectedProveedores, selectedMarcas, selectedRubros])
 
   const filteredForMarca = useMemo(() => {
     let result = productos
@@ -140,8 +161,28 @@ export default function ProductosCatalog() {
     if (selectedFamilias.length > 0) {
       result = result.filter(p => selectedFamilias.includes(getField(p, 'NombreFamilia', 'FAMILIA')))
     }
+    if (selectedRubros.length > 0) {
+      result = result.filter(p => selectedRubros.includes(getField(p, 'NombreRubro', 'RUBRO', 'Rubro')))
+    }
     return result
-  }, [productos, soloConStock, selectedProveedores, selectedFamilias])
+  }, [productos, soloConStock, selectedProveedores, selectedFamilias, selectedRubros])
+
+  const filteredForRubro = useMemo(() => {
+    let result = productos
+    if (soloConStock) {
+      result = result.filter(p => (parseFloat(getField(p, 'stock', 'STOCK_ACTUAL', 'Stock01', 'STOCK')) || 0) > 0)
+    }
+    if (selectedProveedores.length > 0) {
+      result = result.filter(p => selectedProveedores.includes(getField(p, 'Proveedor', 'PROVEEDOR')))
+    }
+    if (selectedFamilias.length > 0) {
+      result = result.filter(p => selectedFamilias.includes(getField(p, 'NombreFamilia', 'FAMILIA')))
+    }
+    if (selectedMarcas.length > 0) {
+      result = result.filter(p => selectedMarcas.includes(getField(p, 'NombreMarca', 'MARCA')))
+    }
+    return result
+  }, [productos, soloConStock, selectedProveedores, selectedFamilias, selectedMarcas])
 
   const proveedoresList = useMemo(() => {
     const all = [...new Set(filteredForProveedor.map(p => getField(p, 'Proveedor', 'PROVEEDOR')).filter(Boolean))].sort()
@@ -160,6 +201,12 @@ export default function ProductosCatalog() {
     if (!filtroMarca) return all.slice(0, 20)
     return all.filter(m => m.toLowerCase().includes(filtroMarca.toLowerCase())).slice(0, 20)
   }, [filteredForMarca, filtroMarca])
+
+  const rubrosList = useMemo(() => {
+    const all = [...new Set(filteredForRubro.map(p => getField(p, 'NombreRubro', 'RUBRO', 'Rubro')).filter(Boolean))].sort()
+    if (!filtroRubro) return all.slice(0, 20)
+    return all.filter(r => String(r).toLowerCase().includes(filtroRubro.toLowerCase())).slice(0, 20)
+  }, [filteredForRubro, filtroRubro])
 
   const sortedProductos = useMemo(() => {
     let sortableItems = [...filtrados]
@@ -216,9 +263,9 @@ export default function ProductosCatalog() {
   }
 
   // Reset page on filter change
-  useEffect(() => { setCurrentPage(1) }, [soloConStock, selectedProveedores, selectedFamilias, selectedMarcas, filtroProveedor, filtroFamilia, filtroMarca, pageSize])
+  useEffect(() => { setCurrentPage(1) }, [soloConStock, selectedProveedores, selectedFamilias, selectedMarcas, selectedRubros, filtroProveedor, filtroFamilia, filtroMarca, filtroRubro, pageSize])
 
-  const tieneFiltrosActivos = search || soloConStock || selectedProveedores.length > 0 || selectedFamilias.length > 0 || selectedMarcas.length > 0 || filtroProveedor || filtroFamilia || filtroMarca
+  const tieneFiltrosActivos = search || soloConStock || selectedProveedores.length > 0 || selectedFamilias.length > 0 || selectedMarcas.length > 0 || selectedRubros.length > 0 || filtroProveedor || filtroFamilia || filtroMarca || filtroRubro
 
   const limpiarFiltros = () => {
     setSearch('')
@@ -229,6 +276,8 @@ export default function ProductosCatalog() {
     setFiltroFamilia('')
     setSelectedMarcas([])
     setFiltroMarca('')
+    setSelectedRubros([])
+    setFiltroRubro('')
     setCurrentPage(1)
   }
 
@@ -391,6 +440,44 @@ export default function ProductosCatalog() {
               </div>
             )}
           </div>
+
+          {/* Rubro Searchable Dropdown */}
+          <div className="relative w-full md:w-48" ref={rubroRef}>
+            <div className="relative group">
+              <input
+                value={filtroRubro}
+                onChange={e => {
+                  setFiltroRubro(e.target.value)
+                  setShowRubroList(true)
+                }}
+                onFocus={() => setShowRubroList(true)}
+                placeholder={selectedRubros.length > 0 ? `${selectedRubros.length} sel. | Rubro...` : 'Rubro...'}
+                className={`w-full bg-slate-50 border rounded-xl px-4 py-3 text-xs font-bold uppercase tracking-widest focus:outline-none focus:border-[#0f5da9] transition-all ${selectedRubros.length > 0 ? 'border-[#0f5da9] bg-[#0f5da9]/5' : 'border-slate-200'}`}
+              />
+              <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 pointer-events-none" />
+            </div>
+            {showRubroList && (
+              <div className="absolute z-50 w-full mt-2 bg-white border border-slate-200 rounded-2xl shadow-2xl max-h-60 overflow-y-auto no-scrollbar py-2 animate-slide-up">
+                {rubrosList.map(r => (
+                  <button
+                    key={r}
+                    onClick={() => {
+                      if (selectedRubros.includes(r)) {
+                        setSelectedRubros(selectedRubros.filter(x => x !== r))
+                      } else {
+                        setSelectedRubros([...selectedRubros, r])
+                      }
+                    }}
+                    className="w-full text-left px-4 py-2 text-xs font-bold text-[#1e293b] hover:bg-[#0f5da9]/5 hover:text-[#0f5da9] transition-colors flex items-center justify-between border-b border-slate-50 last:border-0"
+                  >
+                    {r}
+                    {selectedRubros.includes(r) && <Check size={12} />}
+                  </button>
+                ))}
+                {rubrosList.length === 0 && <div className="px-4 py-3 text-xs font-bold text-slate-400 uppercase text-center italic">Sin resultados</div>}
+              </div>
+            )}
+          </div>
         </div>
 
         {tieneFiltrosActivos && (
@@ -511,6 +598,8 @@ export default function ProductosCatalog() {
                     </th>
                     <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Marca</th>
                     <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Familia</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Rubro</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Embalaje</th>
                     <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Proveedor</th>
                     <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Acciones</th>
                   </tr>
@@ -523,6 +612,8 @@ export default function ProductosCatalog() {
                     const stock = parseFloat(getField(p, 'stock', 'STOCK_ACTUAL', 'Stock01', 'STOCK') || 0)
                     const marca = getField(p, 'NombreMarca', 'MARCA')
                     const familia = getField(p, 'NombreFamilia', 'FAMILIA')
+                    const rubro = getField(p, 'NombreRubro', 'RUBRO', 'Rubro')
+                    const embalaje = getField(p, 'Embalaje', 'EMBALAJE')
                     const proveedor = getField(p, 'Proveedor', 'PROVEEDOR')
 
                     return (
@@ -557,6 +648,8 @@ export default function ProductosCatalog() {
                         <td className="px-6 py-4 text-sm font-bold text-[#1e293b] text-right tabular-nums">{formatCurrency(precio)}</td>
                         <td className="px-6 py-4 text-sm font-semibold text-slate-500 uppercase">{marca || '—'}</td>
                         <td className="px-6 py-4 text-sm font-semibold text-slate-500 uppercase">{familia || '—'}</td>
+                        <td className="px-6 py-4 text-sm font-semibold text-slate-500 uppercase">{rubro || '—'}</td>
+                        <td className="px-6 py-4 text-sm font-bold text-slate-500 text-center uppercase">{embalaje ? `${embalaje} u` : '—'}</td>
                         <td className="px-6 py-4 text-sm font-semibold text-slate-500 uppercase truncate max-w-[140px]">{proveedor || '—'}</td>
                         <td className="px-6 py-4 text-center" onClick={e => e.stopPropagation()}>
                           <button 

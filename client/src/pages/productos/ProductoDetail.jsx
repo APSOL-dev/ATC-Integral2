@@ -145,6 +145,15 @@ export default function ProductoDetail() {
                     <span>{producto.Proveedor || 'ATC'}</span>
                   </div>
                 </div>
+                {(producto.Embalaje || producto.EMBALAJE) && (
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Embalaje</p>
+                    <div className="flex items-center gap-2 text-[#1e293b] font-bold">
+                      <Package size={16} className="text-amber-500" />
+                      <span>{producto.Embalaje || producto.EMBALAJE} unidades</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -20,7 +20,9 @@ export function matchProductSearch(product, searchString) {
   const descri = String(product.DESCRI || product.DESCRIPCION || '').toLowerCase()
   const marca = String(product.NombreMarca || product.MARCA || '').toLowerCase()
   const proveedor = String(product.Proveedor || product.PROVEEDOR || '').toLowerCase()
-  const fullText = `${descri} ${marca} ${proveedor} ${codigo}`
+  const nombreRubro = String(product.NombreRubro || product.Rubro || '').toLowerCase()
+  const rubro = String(product.RUBRO || '').toLowerCase()
+  const fullText = `${descri} ${marca} ${proveedor} ${nombreRubro} ${rubro} ${codigo}`
 
   return terms.every(term => fullText.includes(term))
 }

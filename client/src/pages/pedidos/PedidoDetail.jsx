@@ -601,8 +601,8 @@ export default function PedidoDetail() {
                 const hasPrep = rawPrep !== undefined && rawPrep !== null && String(rawPrep).trim() !== ''
                 const prep = hasPrep ? parseCurrency(rawPrep) : null
                 const itemCode = item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo']
-                const itemName = item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || ''
-                const itemMarca = item.Marca || item.MARCA || item.NombreMarca || ''
+                const itemName = String(item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '')
+                const itemMarca = String(item.NombreMarca || item.Marca || (typeof item.MARCA === 'string' ? item.MARCA : '') || '')
                 const title = (itemMarca && !itemName.toLowerCase().includes(itemMarca.toLowerCase())) ? `${itemName} - ${itemMarca}` : itemName
 
                 // Stock actual — solo mostrar en estados borrador (0 y 0.0)
@@ -861,8 +861,8 @@ export default function PedidoDetail() {
               const p = parseCurrency(item.Precio)
               const c = parseCurrency(item.Cantidad)
               const code = item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo']
-              const name = item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || ''
-              const itemMarca = item.Marca || item.MARCA || item.NombreMarca || ''
+              const name = String(item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '')
+              const itemMarca = String(item.NombreMarca || item.Marca || (typeof item.MARCA === 'string' ? item.MARCA : '') || '')
               const title = (itemMarca && !name.toLowerCase().includes(itemMarca.toLowerCase())) ? `${name} - ${itemMarca}` : name
               return (
                 <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 120px 150px', borderBottom: '1px solid #e2e8f0', padding: '8px 12px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>

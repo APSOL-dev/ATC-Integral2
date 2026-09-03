@@ -27,7 +27,7 @@ export default function PedidoForm() {
     Nombre: '',
     'Lugar de entrega': '',
     Celular: '',
-    Descuento: '',
+    Descuento: '19',
     'Deposito que prepara': '',
     Observaciones: '',
     'Emitido por': user?.nombre || 'Admin',
@@ -112,13 +112,7 @@ export default function PedidoForm() {
   }, [clientSearch, clientes, user])
 
   const filteredProducts = useMemo(() => {
-    if (!productSearch) return productos.slice(0, 150)
-    const q = productSearch.toLowerCase()
-    return productos.filter(p => {
-      const nombre = p.DESCRI || p.DESCRIPCION || ''
-      const codigo = p.CODART || p.CODIGO || ''
-      return nombre.toLowerCase().includes(q) || String(codigo).includes(q)
-    }).slice(0, 150)
+    return productos.filter(p => matchProductSearch(p, productSearch)).slice(0, 150)
   }, [productSearch, productos])
 
   const handleProductKeyDown = (e) => {
@@ -211,7 +205,8 @@ export default function PedidoForm() {
         Cantidad: 1,
         StockAvailable: stock,
         Descuento: 0,
-        Proveedor: prod.Proveedor || ''
+        Proveedor: prod.Proveedor || '',
+        Embalaje: prod.Embalaje || prod.EMBALAJE || ''
       }
       setItems([newItem, ...items])
     }
@@ -516,8 +511,8 @@ export default function PedidoForm() {
               {showProductResults && (
                 <div className="absolute z-30 w-full mt-3 bg-white border border-slate-200 rounded-[2rem] shadow-2xl overflow-hidden py-2 animate-slide-up max-h-[400px] overflow-y-auto no-scrollbar">
                   {filteredProducts.length > 0 ? filteredProducts.map((p, index) => {
-                    const desc = p.DESCRI || p.DESCRIPCION || ''
-                    const marca = p.MARCA || p.NombreMarca || p.Marca || ''
+                    const desc = String(p.DESCRI || p.DESCRIPCION || '')
+                    const marca = String(p.NombreMarca || p.Marca || (typeof p.MARCA === 'string' ? p.MARCA : '') || '')
                     const title = (marca && !desc.toLowerCase().includes(marca.toLowerCase())) ? `${desc} - ${marca}` : desc
                     return (
                     <button
@@ -530,8 +525,12 @@ export default function PedidoForm() {
                         <p className="font-bold text-[#1e293b] text-base group-hover:text-[#0f5da9] transition-colors leading-snug">{title}</p>
                         <div className="flex flex-wrap items-center gap-4 mt-2">
                           <p className="text-sm font-bold text-slate-500 uppercase">Cód: {p.CODART || p.CODIGO}</p>
+                          {(p.NombreRubro || p.Rubro) && <p className="text-sm font-bold text-slate-500 uppercase">Rubro: {p.NombreRubro || p.Rubro}</p>}
                           <p className={`text-sm font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg ${p.stock > 0 ? 'text-emerald-700 bg-emerald-100 font-extrabold border border-emerald-300/60' : 'text-red-600 bg-red-100 font-bold border border-red-200'}`}>Stock: {p.stock || 0}</p>
-                          <p className="text-[15px] font-bold text-[#0f5da9] uppercase">{formatCurrency(p.CC_CIVA || p.PRECIO_LISTA || 0)}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-[15px] font-bold text-[#0f5da9] uppercase">{formatCurrency(p.CC_CIVA || p.PRECIO_LISTA || 0)}</p>
+                            {(p.Embalaje || p.EMBALAJE) && <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md uppercase">Emb: {p.Embalaje || p.EMBALAJE} u</span>}
+                          </div>
                         </div>
                       </div>
                       <Plus size={20} className="text-[#0f5da9] opacity-0 group-hover:opacity-100 transition-all" />
@@ -567,14 +566,17 @@ export default function PedidoForm() {
                     <tbody className="divide-y divide-slate-50">
                       {items.map(item => {
                         const code = item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo']
-                        const name = item['Nombre (más alla de si es item o nombre)'] || item['Nombre item']
-                        const itemMarca = item.Marca || item.MARCA || item.NombreMarca || ''
+                        const name = String(item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '')
+                        const itemMarca = String(item.NombreMarca || item.Marca || (typeof item.MARCA === 'string' ? item.MARCA : '') || '')
                         const title = (itemMarca && !name.toLowerCase().includes(itemMarca.toLowerCase())) ? `${name} - ${itemMarca}` : name
                         return (
                         <tr key={code} className="hover:bg-slate-50/80 transition-colors group">
                           <td className="px-8 py-5">
                             <p className="text-base font-bold text-[#1e293b] leading-snug">{title}</p>
-                            <p className="text-sm font-bold text-slate-500 uppercase tracking-tighter mt-1">SKU: {code}</p>
+                            <p className="text-sm font-bold text-slate-500 uppercase tracking-tighter mt-1">
+                              SKU: {code}
+                              {(item.Embalaje || item.EMBALAJE) && <span className="ml-2 font-semibold text-slate-400"> • Emb: {item.Embalaje || item.EMBALAJE} u</span>}
+                            </p>
                           </td>
                           <td className="px-4 py-5 text-center">
                             <span className={`text-sm font-extrabold uppercase px-2.5 py-1 rounded-lg ${item.StockAvailable > 0 ? 'text-emerald-700 bg-emerald-100 border border-emerald-300/60 font-black' : 'text-red-600 bg-red-100 font-bold'}`}>
@@ -654,7 +656,7 @@ export default function PedidoForm() {
                           onChange={(e) => setHeader({...header, Descuento: e.target.value})}
                           onFocus={(e) => { if (e.target.value === '0') setHeader({...header, Descuento: ''}) }}
                           onKeyDown={handleBlurOnEnter}
-                          placeholder="0"
+                          placeholder="19"
                           className="w-full pl-9 pr-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm font-extrabold text-white outline-none focus:border-[#fe4a65]"
                         />
                      </div>

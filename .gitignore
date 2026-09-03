@@ -46,6 +46,10 @@ desktop.ini
 .env.production.local
 **/credentials/google-service-account.json
 
+# Temporary scratch and data files
+scratch/
+*.xlsx
+
 # Tablero temporary source files
 Tablero-de-control-A-Todo-Color-main/
 Tablero-de-control-A-Todo-Color-main.rar
