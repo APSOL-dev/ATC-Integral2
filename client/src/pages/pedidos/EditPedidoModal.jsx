@@ -263,7 +263,7 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
                 <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
-                  placeholder={searchMode === 'codigo' ? 'Ingrese código numérico de artículo (SKU)...' : 'Buscar por descripción, marca o rubro...'}
+                  placeholder={searchMode === 'codigo' ? 'Ingrese código exacto de artículo (SKU)...' : 'Buscar por descripción, marca o rubro...'}
                   value={productSearch}
                   onChange={(e) => {
                     setProductSearch(e.target.value)

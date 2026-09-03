@@ -11,9 +11,9 @@ export function matchProductSearch(product, searchString, mode = 'all') {
   const lowerQuery = searchString.toLowerCase().trim()
   const codigo = String(product.CODART || product.CODIGO || '').toLowerCase()
 
-  // Búsqueda exclusiva por código de artículo
+  // Búsqueda exclusiva por código de artículo (coincidencia exacta)
   if (mode === 'codigo') {
-    return codigo.includes(lowerQuery)
+    return codigo === lowerQuery
   }
 
   // Coincidencia directa por código de artículo en modo por defecto ('all')

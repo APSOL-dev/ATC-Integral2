@@ -539,7 +539,7 @@ export default function PedidoForm() {
                   }}
                   onFocus={() => setShowProductResults(true)}
                   onKeyDown={handleProductKeyDown}
-                  placeholder={searchMode === 'codigo' ? 'Ingrese código numérico de artículo (SKU)...' : 'Buscar por descripción, marca o rubro del producto...'}
+                  placeholder={searchMode === 'codigo' ? 'Ingrese código exacto de artículo (SKU)...' : 'Buscar por descripción, marca o rubro del producto...'}
                   className="w-full pl-14 pr-6 py-5 bg-slate-50 border border-slate-200 rounded-[1.5rem] text-[15px] font-bold text-[#1e293b] focus:ring-8 focus:ring-[#0f5da9]/5 focus:border-[#0f5da9] transition-all outline-none"
                 />
               </div>

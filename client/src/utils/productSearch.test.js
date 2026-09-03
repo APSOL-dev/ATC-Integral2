@@ -48,8 +48,9 @@ describe('matchProductSearch utility', () => {
     expect(matchProductSearch(sampleProduct, 'esm', 'nombre')).toBe(true)
   })
 
-  it('en modo "codigo" solo debería buscar por código de artículo', () => {
+  it('en modo "codigo" solo debería buscar por código de artículo con coincidencia exacta', () => {
     expect(matchProductSearch(sampleProduct, '10045', 'codigo')).toBe(true)
+    expect(matchProductSearch(sampleProduct, '100', 'codigo')).toBe(false)
     expect(matchProductSearch(sampleProduct, 'esm', 'codigo')).toBe(false)
   })
 })
