@@ -23,7 +23,7 @@ export default function PedidoDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { pedidos, fetchPedidos, setPedidos, hydrateDetails, descuentosMarca } = useData()
+  const { pedidos, fetchPedidos, setPedidos, hydrateDetails, fetchPedidoById, descuentosMarca } = useData()
 
   const [pedido, setPedido] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -45,36 +45,44 @@ export default function PedidoDetail() {
     if (!found) {
       // Pedido no encontrado en contexto — fallback de red
       setLoading(true)
-      fetch(`${import.meta.env.VITE_API_URL}/pedidos/${id}`, {
-        headers: { ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {}) }
-      })
-        .then(res => { if (!res.ok) throw new Error('No encontrado'); return res.json() })
+      const fetchFn = typeof fetchPedidoById === 'function'
+        ? fetchPedidoById(id)
+        : fetch(`${import.meta.env.VITE_API_URL}/pedidos/${id}`, {
+            headers: { ...(user?.token ? { 'Authorization': `Bearer ${user.token}` } : {}) }
+          }).then(res => { if (!res.ok) throw new Error('No encontrado'); return res.json() })
+
+      Promise.resolve(fetchFn)
         .then(data => {
-          setPedido(data)
+          if (data) setPedido(data)
           setLoading(false)
-          if (data?.detalles && setPedidos) {
-            setPedidos(prev => prev.map(p => String(p.IDPedido) === String(id) ? { ...p, detalles: data.detalles } : p))
-          }
         })
         .catch(() => { setPedido(null); setLoading(false) })
       return
     }
 
-    // Pedido encontrado — mostrarlo inmediatamente aunque no tenga detalles
+    // Pedido encontrado — mostrarlo inmediatamente
     setPedido(found)
     setLoading(false)
 
     const hasDetails = found.detalles && Array.isArray(found.detalles) && found.detalles.length > 0
     if (!hasDetails) {
-      // Detalles aún no hidratados — disparar hydrateDetails (usa /details-batch, rápido)
+      // Detalles aún no hidratados — disparar hydrateDetails (usa /details-batch)
       setDetailsLoading(true)
       if (typeof hydrateDetails === 'function') {
-        hydrateDetails([id]).finally(() => setDetailsLoading(false))
+        hydrateDetails([id]).then(async () => {
+          if (typeof fetchPedidoById === 'function') {
+            const data = await fetchPedidoById(id)
+            if (data?.detalles?.length > 0) {
+              setPedido(data)
+            }
+          }
+        }).finally(() => setDetailsLoading(false))
       } else {
         setDetailsLoading(false)
       }
     }
-  }, [id, pedidos])
+  }, [id, pedidos, fetchPedidoById, hydrateDetails])
+
 
   // Resolve vendor name (VendedorNombre is already mapped by the server)
   useEffect(() => {

@@ -368,13 +368,43 @@ router.post('/details-batch', async (req, res, next) => {
     const result = {};
     ids.forEach(id => {
       const p = finalPedidos.find(x => String(x.IDPedido) === String(id));
-      result[id] = p ? (p.detalles || []) : [];
+      let details = p ? (p.detalles || []) : [];
+      if ((!details || details.length === 0) && p && p.Nro_PedidoReferencia) {
+        const baseOrder = finalPedidos.find(x => String(x.IDPedido) === String(p.Nro_PedidoReferencia));
+        if (baseOrder && baseOrder.detalles && baseOrder.detalles.length > 0) {
+          details = baseOrder.detalles;
+        }
+      }
+      result[id] = details;
     });
     res.json(result);
   } catch (error) {
     next(error);
   }
 });
+
+// GET single pedido by ID
+router.get('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const finalPedidos = await getCompletePedidos();
+    const p = finalPedidos.find(x => String(x.IDPedido) === String(id));
+    if (!p) {
+      return res.status(404).json({ message: 'Pedido no encontrado' });
+    }
+    let details = p.detalles || [];
+    if ((!details || details.length === 0) && p.Nro_PedidoReferencia) {
+      const baseOrder = finalPedidos.find(x => String(x.IDPedido) === String(p.Nro_PedidoReferencia));
+      if (baseOrder && baseOrder.detalles && baseOrder.detalles.length > 0) {
+        details = baseOrder.detalles;
+      }
+    }
+    res.json({ ...p, detalles: details });
+  } catch (error) {
+    next(error);
+  }
+});
+
 
 // POST new pedido
 router.post('/', (req, res, next) => {

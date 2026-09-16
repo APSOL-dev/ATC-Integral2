@@ -84,9 +84,10 @@ export function DataProvider({ children }) {
           let updated = false
           const next = prev.map(p => {
             const id = String(p.IDPedido)
-            if (batchDetails[id] && (!p.detalles || p.detalles.length === 0)) {
+            const detailsArr = batchDetails[id]
+            if (Array.isArray(detailsArr) && detailsArr.length > 0 && (!p.detalles || p.detalles.length === 0)) {
               updated = true
-              return { ...p, detalles: batchDetails[id] }
+              return { ...p, detalles: detailsArr }
             }
             return p
           })
@@ -97,6 +98,38 @@ export function DataProvider({ children }) {
       console.error('Error hydrating details batch:', err)
     }
   }, [])
+
+  const fetchPedidoById = useCallback(async (id) => {
+    if (!id) return null
+    const storedUser = localStorage.getItem('atc_user')
+    let userObj = null
+    try {
+      if (storedUser) userObj = JSON.parse(storedUser)
+    } catch (e) {}
+
+    const authHeaders = userObj?.token ? { 'Authorization': `Bearer ${userObj.token}` } : {}
+
+    try {
+      const res = await fetch(`${API_URL}/pedidos/${id}`, { headers: authHeaders })
+      if (!res.ok) return null
+      const data = await res.json()
+      if (data && data.IDPedido) {
+        setPedidos(prev => {
+          const exists = prev.some(p => String(p.IDPedido) === String(id))
+          if (exists) {
+            return prev.map(p => String(p.IDPedido) === String(id) ? { ...p, ...data } : p)
+          } else {
+            return [data, ...prev]
+          }
+        })
+        return data
+      }
+    } catch (err) {
+      console.error('Error fetching single pedido by ID:', err)
+    }
+    return null
+  }, [])
+
 
   const preloadClientesList = useCallback(async (ids) => {
     if (!Array.isArray(ids) || ids.length === 0) return
@@ -390,6 +423,7 @@ export function DataProvider({ children }) {
       preloadedClientes,
       preloadClientesList,
       hydrateDetails,
+      fetchPedidoById,
       pedidos, 
       setPedidos, 
       clientes,
