@@ -429,6 +429,8 @@ export default function PedidoDetail() {
   const emitidoFecha = pedido['Emitido Fecha'] || pedido['Fecha y hora']
   const ultimaModif = pedido['Fecha y Hora de Última Modificación'] || pedido['Fecha_Ultima_Modificacion']
 
+  const nroCliente = pedido.Cliente || pedido.IDCliente || pedido.NRO_CLIENTE || ''
+
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-12 px-4 print:p-0">
 
@@ -458,7 +460,7 @@ export default function PedidoDetail() {
               )}
             </div>
             <p className="text-[#0f5da9] font-bold uppercase text-[10px] tracking-widest mt-1">
-              {pedido.Nombre || pedido['Razón social (NO BD)']} · {formatDateTime(emitidoFecha)}
+              {nroCliente ? `Nº ${nroCliente} · ` : ''}{pedido.Nombre || pedido['Razón social (NO BD)']} · {formatDateTime(emitidoFecha)}
             </p>
           </div>
         </div>
@@ -487,7 +489,14 @@ export default function PedidoDetail() {
                 {/* Bloque izquierdo: cliente + dirección + contacto */}
                 <div className="flex-1 space-y-4">
                   <div>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Cliente</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Cliente</p>
+                      {nroCliente && (
+                        <span className="text-[#0f5da9] font-extrabold text-[10px] tracking-wider bg-[#0f5da9]/10 px-2 py-0.5 rounded-md">
+                          Nº {nroCliente}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-lg font-bold text-[#1e293b] leading-tight">{pedido.Nombre || pedido['Razón social (NO BD)']}</p>
                   </div>
                   <div className="flex items-start gap-3.5">

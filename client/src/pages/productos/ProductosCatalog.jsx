@@ -25,7 +25,7 @@ export default function ProductosCatalog() {
   const [soloConStock, setSoloConStock] = useState(false)
   const loading = globalLoading
   const [currentPage, setCurrentPage] = useState(1)
-  const [pageSize, setPageSize] = useState(40)
+  const [pageSize, setPageSize] = useState(120)
   const [sortConfig, setSortConfig] = useState({ key: 'DESCRI', direction: 'asc' })
   const [showDescuentosModal, setShowDescuentosModal] = useState(false)
 
@@ -574,8 +574,8 @@ export default function ProductosCatalog() {
               </div>
             )}
 
-            <div className="overflow-x-auto no-scrollbar">
-              <table className="w-full text-left border-collapse">
+            <div className="w-full overflow-x-auto custom-scrollbar">
+              <table className="w-full min-w-[950px] text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
                     <th 
