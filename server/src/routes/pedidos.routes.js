@@ -164,20 +164,27 @@ function mapDbPedidoToSheetFormat(dbP) {
 }
 
 function mapDbDetalleToSheetFormat(dbD) {
+  const precio = parseCurrency(dbD.Precio);
+  const cant = parseCurrency(dbD.Cantidad);
+  const descPct = parseCurrency(dbD.Descuento);
+  const subtotal = dbD.Sub_Total ? parseCurrency(dbD.Sub_Total) : (precio * cant);
+  const montoDesc = descPct > 0 ? (subtotal * (descPct / 100)) : 0;
+  const totalNeto = dbD.Total && dbD.Total !== subtotal ? parseCurrency(dbD.Total) : (subtotal - montoDesc);
+
   return {
-    IDPedido: dbD.IdPedido,
-    IDDetalle: dbD.IdDetalle,
+    IDPedido: String(dbD.IDPedido || dbD.IdPedido),
+    IDDetalle: String(dbD.IdDetalle || dbD.IDDetalle),
     'Item  codigo': dbD.ItemCodigo ? String(dbD.ItemCodigo) : '',
     'Nombre item': dbD.NombreItem || '',
     'Nombre (más alla de si es item o nombre)': dbD.NombreItem || '',
     'Codigo (más alla de si es item o nombre)': dbD.ItemCodigo ? String(dbD.ItemCodigo) : '',
-    Cantidad: dbD.Cantidad || 0,
-    Descuento: dbD.Descuento || 0,
-    Precio: dbD.Precio || 0,
+    Cantidad: cant,
+    Descuento: descPct,
+    Precio: precio,
     'Cantidad preparada': dbD.CantidadPreparada || 0,
-    'Subtotal (precio x cantidad)': dbD.Sub_Total || 0,
-    'Monto del descuento': 0,
-    'Total (subtotal - monto del descuento)': dbD.Total || 0,
+    'Subtotal (precio x cantidad)': subtotal,
+    'Monto del descuento': montoDesc,
+    'Total (subtotal - monto del descuento)': totalNeto,
     'Stock al momento de cargar': 0,
     Proveedor: '',
     IdRenglonGestion: dbD.IdRenglonGestion || null

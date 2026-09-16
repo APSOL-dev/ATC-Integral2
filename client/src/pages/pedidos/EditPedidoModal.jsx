@@ -4,15 +4,17 @@ import { X, Search, Plus, Trash2, Save, ShoppingCart, Tag, MapPin, AlignLeft, Ty
 import { formatCurrency, parseCurrency } from '../../utils/format.js'
 import { useData } from '../../context/DataContext.jsx'
 import { matchProductSearch } from '../../utils/productSearch.js'
+import { calculateOrderTotals, getMarcaDiscount, getBrandName } from '../../utils/discountUtils.js'
 
 export default function EditPedidoModal({ pedido, onClose, onSave }) {
   const [loading, setLoading] = useState(false)
-  const { productos } = useData()
+  const { productos, descuentosMarca } = useData()
   const [productSearch, setProductSearch] = useState('')
   const [searchMode, setSearchMode] = useState('nombre') // 'nombre' | 'codigo'
   const [showProductResults, setShowProductResults] = useState(false)
   const [activeProductIndex, setActiveProductIndex] = useState(-1)
   const productRef = useRef(null)
+  const lastPedidoIdRef = useRef(null)
 
   // Local state for edits
   const [header, setHeader] = useState({
@@ -26,23 +28,32 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
   const [items, setItems] = useState([])
 
   useEffect(() => {
-    if (pedido?.detalles) {
+    if (pedido?.detalles && (lastPedidoIdRef.current !== pedido.IDPedido || items.length === 0)) {
       const sanitized = (pedido.detalles || []).map(item => {
         const itemCode = item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo']
+        const itemName = item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || ''
         const foundProduct = (productos || []).find(p => String(p.CODART || p.CODIGO) === String(itemCode))
+        const itemMarca = getBrandName(item) || getBrandName(foundProduct)
         const liveStock = foundProduct ? (foundProduct.stock ?? foundProduct.StockAvailable ?? 0) : parseCurrency(item['Stock al momento de cargar'] || item.StockAvailable)
+
+        const existingDesc = parseCurrency(item.Descuento)
+        const descMarca = getMarcaDiscount(itemMarca || item || foundProduct, descuentosMarca)
+        const finalDesc = existingDesc > 0 ? existingDesc : descMarca
 
         return {
           ...item,
+          Marca: itemMarca,
           Precio: parseCurrency(item.Precio),
           Cantidad: parseCurrency(item.Cantidad),
           StockAvailable: liveStock,
-          Descuento: parseCurrency(item.Descuento)
+          Descuento: finalDesc,
+          DescuentoBloqueado: descMarca > 0
         }
       })
       setItems(sanitized)
+      lastPedidoIdRef.current = pedido.IDPedido
     }
-  }, [pedido, productos])
+  }, [pedido, productos, descuentosMarca])
 
   // Handle outside click for product search
   useEffect(() => {
@@ -93,14 +104,15 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
   const handleAddItem = (prod) => {
     const codigo = prod.CODART || prod.CODIGO
     const descri = prod.DESCRI || prod.DESCRIPCION
-    const marca = prod.MARCA || prod.NombreMarca || prod.Marca || ''
+    const marca = getBrandName(prod)
     const precio = prod.CC_CIVA || prod.PRECIO_LISTA || 0
     const stock = prod.stock || 0
+    const descMarca = getMarcaDiscount(prod, descuentosMarca)
     
     const getItemCode = i => i['Codigo (más alla de si es item o nombre)'] || i['Item  codigo']
     const existing = items.find(i => String(getItemCode(i)) === String(codigo))
     if (existing) {
-      const updatedItem = { ...existing, Cantidad: existing.Cantidad + 1 }
+      const updatedItem = { ...existing, Cantidad: (parseCurrency(existing.Cantidad) || 0) + 1 }
       const otherItems = items.filter(i => String(getItemCode(i)) !== String(codigo))
       setItems([updatedItem, ...otherItems])
     } else {
@@ -110,10 +122,14 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
         'Item  codigo': codigo,
         'Nombre item': descri,
         Marca: marca,
+        NombreMarca: prod.NombreMarca || (typeof prod.Marca === 'string' ? prod.Marca : marca),
+        IdMarca: typeof prod.MARCA === 'number' ? prod.MARCA : (prod.IdMarca || prod.id_marca || null),
+        MARCA: prod.MARCA,
         Precio: precio,
         Cantidad: 1,
         StockAvailable: stock,
-        Descuento: 0,
+        Descuento: descMarca,
+        DescuentoBloqueado: descMarca > 0,
         Proveedor: prod.Proveedor || ''
       }
       setItems([newItem, ...items])
@@ -123,25 +139,27 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
   }
 
   const handleRemoveItem = (code) => {
-    setItems(items.filter(i => String(i['Codigo (más alla de si es item o nombre)'] || i['Item  codigo']) !== String(code)))
+    setItems(prevItems => prevItems.filter(i => String(i['Codigo (más alla de si es item o nombre)'] || i['Item  codigo']) !== String(code)))
   }
 
   const handleUpdateQty = (code, qty) => {
-    setItems(items.map(i => String(i['Codigo (más alla de si es item o nombre)'] || i['Item  codigo']) === String(code) ? { ...i, Cantidad: Math.max(1, qty) } : i))
+    setItems(prevItems => prevItems.map(i => {
+      const iCode = i['Codigo (más alla de si es item o nombre)'] || i['Item  codigo']
+      if (String(iCode) === String(code)) {
+        return { ...i, Cantidad: qty }
+      }
+      return i
+    }))
   }
 
   const totals = useMemo(() => {
-    const subtotal = items.reduce((sum, item) => sum + (parseCurrency(item.Precio) * parseCurrency(item.Cantidad)), 0)
-    const discountPercent = parseCurrency(header.Descuento)
-    const discountAmount = subtotal * (discountPercent / 100)
-    
+    const calculated = calculateOrderTotals(items, header.Descuento, descuentosMarca)
     return {
-      subtotal,
-      discountAmount,
-      total: subtotal - discountAmount,
-      totalUnidades: items.reduce((sum, item) => sum + (parseCurrency(item.Cantidad) || 0), 0)
+      ...calculated,
+      subtotal: calculated.subtotalBruto,
+      discountAmount: calculated.montoDescGeneral + calculated.montoDescMarca
     }
-  }, [items, header.Descuento])
+  }, [items, header.Descuento, descuentosMarca])
 
   const handleSave = () => {
     if (items.length === 0) return alert('El pedido debe tener al menos un producto.')
@@ -281,7 +299,7 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
                   {filteredProductos.length > 0 ? (
                     filteredProductos.map((prod, index) => {
                       const desc = String(prod.DESCRI || prod.DESCRIPCION || '')
-                      const marca = String(prod.NombreMarca || prod.Marca || (typeof prod.MARCA === 'string' ? prod.MARCA : '') || '')
+                      const marca = getBrandName(prod)
                       const title = (marca && !desc.toLowerCase().includes(marca.toLowerCase())) ? `${desc} - ${marca}` : desc
                       return (
                       <div key={prod.CODART || prod.CODIGO} className={`px-5 py-4 flex items-center justify-between group cursor-pointer transition-colors border-b border-slate-50 last:border-0 ${index === activeProductIndex ? 'bg-[#0f5da9]/10' : 'hover:bg-slate-50'}`} onClick={() => handleAddItem(prod)}>
@@ -333,35 +351,66 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
                   {items.map((item, idx) => {
                     const code = item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo']
                     const name = String(item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '')
-                    const itemMarca = String(item.NombreMarca || item.Marca || (typeof item.MARCA === 'string' ? item.MARCA : '') || '')
+                    const itemMarca = getBrandName(item)
                     const title = (itemMarca && !name.toLowerCase().includes(itemMarca.toLowerCase())) ? `${name} - ${itemMarca}` : name
                     return (
-                    <tr key={`${code}-${idx}`} className="hover:bg-slate-50/50 transition-colors">
+                    <tr key={code || idx} className="hover:bg-slate-50/50 transition-colors">
                       <td className="py-4 px-6">
                         <p className="font-bold text-[15px] text-[#1e293b] leading-snug">{title}</p>
-                        <div className="flex items-center gap-4 mt-1.5">
+                        <div className="flex flex-wrap items-center gap-4 mt-1.5">
                           <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Cód: {code}</span>
                           {(item.Embalaje || item.EMBALAJE) && <span className="text-xs font-semibold text-slate-400 uppercase"> • Emb: {item.Embalaje || item.EMBALAJE} u</span>}
                           <span className={`text-xs font-extrabold uppercase tracking-widest px-2.5 py-1 rounded-lg ${(item.StockAvailable || 0) > 0 ? 'text-emerald-700 bg-emerald-100 border border-emerald-300/60 font-black' : 'text-red-600 bg-red-100 font-bold'}`}>
                             Stock: {item.StockAvailable || 0}
                           </span>
+                          {item.Descuento > 0 && (
+                            <span className="text-xs font-bold text-slate-500">
+                              Bruto: <span className="line-through text-slate-400">{formatCurrency(parseCurrency(item.Precio) * parseCurrency(item.Cantidad))}</span> • Ahorro {item.Descuento}%: <span className="text-amber-700 font-extrabold">-{formatCurrency((parseCurrency(item.Precio) * parseCurrency(item.Cantidad)) * (parseCurrency(item.Descuento) / 100))}</span>
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="py-4 px-4 text-center">
                         <span className="font-bold text-slate-500 tabular-nums">{formatCurrency(item.Precio)}</span>
                       </td>
                       <td className="py-4 px-4">
-                        <div className="flex items-center justify-center gap-3">
+                        <div className="flex items-center justify-center gap-2">
                           <button 
                             type="button"
-                            onClick={() => handleUpdateQty(code, parseCurrency(item.Cantidad) - 1)}
-                            className="size-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors font-bold"
+                            onClick={() => {
+                              const currentQty = parseCurrency(item.Cantidad) || 1
+                              handleUpdateQty(code, Math.max(1, currentQty - 1))
+                            }}
+                            className="size-7 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center transition-colors font-bold shrink-0"
                           >-</button>
-                          <span className="font-bold text-sm w-8 text-center tabular-nums">{parseCurrency(item.Cantidad)}</span>
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.Cantidad === '' ? '' : item.Cantidad}
+                            onChange={(e) => {
+                              const val = e.target.value
+                              if (val === '') {
+                                handleUpdateQty(code, '')
+                              } else {
+                                const num = parseInt(val, 10)
+                                handleUpdateQty(code, isNaN(num) ? 1 : Math.max(1, num))
+                              }
+                            }}
+                            onBlur={() => {
+                              if (!item.Cantidad || item.Cantidad === '' || parseCurrency(item.Cantidad) < 1) {
+                                handleUpdateQty(code, 1)
+                              }
+                            }}
+                            onKeyDown={handleBlurOnEnter}
+                            className="w-16 text-center py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-[#1e293b] focus:border-[#0f5da9] focus:bg-white transition-all outline-none tabular-nums"
+                          />
                           <button 
                             type="button"
-                            onClick={() => handleUpdateQty(code, parseCurrency(item.Cantidad) + 1)}
-                            className="size-7 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 flex items-center justify-center transition-colors font-bold"
+                            onClick={() => {
+                              const currentQty = parseCurrency(item.Cantidad) || 1
+                              handleUpdateQty(code, currentQty + 1)
+                            }}
+                            className="size-7 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 flex items-center justify-center transition-colors font-bold shrink-0"
                           >+</button>
                         </div>
                       </td>

@@ -10,6 +10,7 @@ import {
   Ban, ShieldAlert, Edit2, Trash2, Eye, RefreshCw
 } from 'lucide-react'
 import { formatCurrency, formatDateTime, formatDate, getStatusConfig, calcEstadoBadge, parseCurrency } from '../../utils/format.js'
+import { calculateOrderTotals, getMarcaDiscount, getBrandName } from '../../utils/discountUtils.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import { useData } from '../../context/DataContext.jsx'
 import { PERFILES, normalizePerfil, puedeDo } from '../../utils/permisos.js'
@@ -22,7 +23,7 @@ export default function PedidoDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { pedidos, fetchPedidos, setPedidos, hydrateDetails } = useData()
+  const { pedidos, fetchPedidos, setPedidos, hydrateDetails, descuentosMarca } = useData()
 
   const [pedido, setPedido] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -363,11 +364,6 @@ export default function PedidoDetail() {
   const canAnular = puedeDo(user?.perfil, 'pedidos', 'anular')
   const hasActions = canEdit || canApprove || canDelete || canAnular
 
-  const subtotal = useMemo(() => {
-    if (!pedido || !pedido.detalles) return 0
-    return pedido.detalles.reduce((acc, item) => acc + (parseCurrency(item.Precio) * parseCurrency(item.Cantidad)), 0)
-  }, [pedido])
-
   if (loading) return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-6 animate-pulse">
       {/* Header skeleton */}
@@ -407,11 +403,13 @@ export default function PedidoDetail() {
     </div>
   )
 
+  const orderTotals = calculateOrderTotals(pedido.detalles || [], pedido['Porcentaje de descuento (%)'], descuentosMarca)
+  const subtotal = orderTotals.subtotalBruto
   const badge = calcEstadoBadge(pedido)
   const config = getStatusConfig(badge)
   const discPct = parseCurrency(pedido['Porcentaje de descuento (%)'])
-  const discAmt = subtotal * (discPct / 100)
-  const totalNeto = subtotal - discAmt
+  const discAmt = orderTotals.montoDescGeneral
+  const totalNeto = orderTotals.total
   // Only count faltantes when Preparado field has a value AND is less than Cantidad
   const hasFaltantes = pedido.detalles?.some(item => {
     const rawPrep = item.Preparado
@@ -602,8 +600,9 @@ export default function PedidoDetail() {
                 const prep = hasPrep ? parseCurrency(rawPrep) : null
                 const itemCode = item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo']
                 const itemName = String(item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '')
-                const itemMarca = String(item.NombreMarca || item.Marca || (typeof item.MARCA === 'string' ? item.MARCA : '') || '')
+                const itemMarca = getBrandName(item)
                 const title = (itemMarca && !itemName.toLowerCase().includes(itemMarca.toLowerCase())) ? `${itemName} - ${itemMarca}` : itemName
+                const itemDescPct = parseCurrency((item.Descuento !== undefined && item.Descuento !== null && Number(item.Descuento) > 0) ? item.Descuento : getMarcaDiscount(item, descuentosMarca))
 
                 // Stock actual — solo mostrar en estados borrador (0 y 0.0)
                 const isBorrador = ['0', '0.', '0.0'].includes(String(pedido.Estado))
@@ -630,9 +629,16 @@ export default function PedidoDetail() {
                         <Package size={18} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[15px] font-bold text-[#1e293b] leading-tight group-hover:text-[#0f5da9] transition-colors truncate">
-                          {title}
-                        </p>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="text-[15px] font-bold text-[#1e293b] leading-tight group-hover:text-[#0f5da9] transition-colors truncate">
+                            {title}
+                          </p>
+                          {itemDescPct > 0 && (
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-800 border border-amber-300 rounded-md text-[10px] font-extrabold uppercase shrink-0 flex items-center gap-1">
+                              <Tag size={10} /> Desc. Marca ({itemDescPct}%)
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] font-bold text-slate-400 uppercase mt-0.5">
                           Cód: {itemCode || idx}
                         </p>
@@ -668,14 +674,30 @@ export default function PedidoDetail() {
                       </div>
 
                       {/* Pricing */}
-                      <div className="text-right min-w-[100px]">
+                      <div className="text-right min-w-[110px]">
                         <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Total</span>
-                        <p className="text-sm font-bold text-[#1e293b] tabular-nums">
-                          {formatCurrency(price * qty)}
-                        </p>
-                        <p className="text-[9px] font-bold text-slate-400 tabular-nums">
-                          {formatCurrency(price)} / ud
-                        </p>
+                        {itemDescPct > 0 ? (
+                          <>
+                            <span className="text-[11px] font-bold text-slate-400 line-through block tabular-nums leading-tight">
+                              {formatCurrency(price * qty)}
+                            </span>
+                            <p className="text-sm font-bold text-[#0f5da9] tabular-nums leading-tight">
+                              {formatCurrency((price * qty) * (1 - itemDescPct / 100))}
+                            </p>
+                            <span className="text-[9px] font-extrabold text-amber-700 block mt-0.5">
+                              Ahorro: -{formatCurrency((price * qty) * (itemDescPct / 100))}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-sm font-bold text-[#1e293b] tabular-nums">
+                              {formatCurrency(price * qty)}
+                            </p>
+                            <p className="text-[9px] font-bold text-slate-400 tabular-nums">
+                              {formatCurrency(price)} / ud
+                            </p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -685,18 +707,34 @@ export default function PedidoDetail() {
             </div>
             <div className="px-6 py-4 border-t border-slate-50 flex flex-col items-end gap-1.5 bg-slate-50/30">
               <div className="flex items-center gap-6">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Subtotal</span>
-                <span className="text-xs font-bold text-[#1e293b] tabular-nums w-28 text-right">{formatCurrency(subtotal)}</span>
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                  {orderTotals.montoDescMarca > 0 ? 'Subtotal Bruto' : 'Subtotal'}
+                </span>
+                <span className="text-xs font-bold text-[#1e293b] tabular-nums w-28 text-right">
+                  {formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.subtotalBruto : subtotal)}
+                </span>
               </div>
+              {orderTotals.montoDescMarca > 0 && (
+                <div className="flex items-center gap-6 text-amber-700">
+                  <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
+                    <Tag size={10} /> Desc. por Marca
+                  </span>
+                  <span className="text-xs font-bold tabular-nums w-28 text-right">-{formatCurrency(orderTotals.montoDescMarca)}</span>
+                </div>
+              )}
               {discPct > 0 && (
                 <div className="flex items-center gap-6">
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Dto. ({discPct}%)</span>
-                  <span className="text-xs font-bold text-[#fe4a65] tabular-nums w-28 text-right">-{formatCurrency(discAmt)}</span>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Dto. General ({discPct}%)</span>
+                  <span className="text-xs font-bold text-[#fe4a65] tabular-nums w-28 text-right">
+                    -{formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.montoDescGeneral : discAmt)}
+                  </span>
                 </div>
               )}
               <div className="flex items-center gap-6 border-t border-slate-200 pt-3 mt-1.5">
                 <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Total Neto</span>
-                <span className="text-lg font-bold text-[#1e293b] tabular-nums w-28 text-right">{formatCurrency(totalNeto)}</span>
+                <span className="text-lg font-bold text-[#1e293b] tabular-nums w-28 text-right">
+                  {formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.total : totalNeto)}
+                </span>
               </div>
             </div>
           </div>
@@ -712,19 +750,35 @@ export default function PedidoDetail() {
               <h3 className="text-[10px] font-bold text-white/70 uppercase tracking-widest flex items-center gap-2"><CreditCard size={13} /> Liquidación</h3>
               <div className="space-y-3 border-t border-white/10 pt-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-[9px] font-bold text-white/60 uppercase tracking-widest">Subtotal</span>
-                  <span className="text-base font-bold text-white tabular-nums">{formatCurrency(subtotal)}</span>
+                  <span className="text-[9px] font-bold text-white/60 uppercase tracking-widest">
+                    {orderTotals.montoDescMarca > 0 ? 'Subtotal Bruto' : 'Subtotal'}
+                  </span>
+                  <span className="text-base font-bold text-white tabular-nums">
+                    {formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.subtotalBruto : subtotal)}
+                  </span>
                 </div>
+                {orderTotals.montoDescMarca > 0 && (
+                  <div className="flex justify-between items-center text-amber-300">
+                    <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
+                      <Tag size={11} /> Desc. por Marca
+                    </span>
+                    <span className="text-base font-bold">-{formatCurrency(orderTotals.montoDescMarca)}</span>
+                  </div>
+                )}
                 {discPct > 0 && (
                   <div className="flex justify-between items-center text-red-300">
-                    <span className="text-[9px] font-bold uppercase tracking-widest">Dto. {discPct}%</span>
-                    <span className="text-base font-bold">-{formatCurrency(discAmt)}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-widest">Dto. General {discPct}%</span>
+                    <span className="text-base font-bold">
+                      -{formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.montoDescGeneral : discAmt)}
+                    </span>
                   </div>
                 )}
               </div>
               <div className="bg-white/10 rounded-2xl border border-white/10 p-5 text-right">
                 <p className="text-[9px] font-bold text-white/40 uppercase tracking-[0.3em] mb-1">Total Neto</p>
-                <p className="text-4xl font-bold text-white tracking-tighter tabular-nums">{formatCurrency(totalNeto)}</p>
+                <p className="text-4xl font-bold text-white tracking-tighter tabular-nums">
+                  {formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.total : totalNeto)}
+                </p>
               </div>
             </div>
           </div>
@@ -862,7 +916,7 @@ export default function PedidoDetail() {
               const c = parseCurrency(item.Cantidad)
               const code = item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo']
               const name = String(item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '')
-              const itemMarca = String(item.NombreMarca || item.Marca || (typeof item.MARCA === 'string' ? item.MARCA : '') || '')
+              const itemMarca = getBrandName(item)
               const title = (itemMarca && !name.toLowerCase().includes(itemMarca.toLowerCase())) ? `${name} - ${itemMarca}` : name
               return (
                 <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 80px 120px 150px', borderBottom: '1px solid #e2e8f0', padding: '8px 12px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>

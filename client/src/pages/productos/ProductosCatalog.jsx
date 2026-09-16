@@ -1,9 +1,12 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, X, Package, Filter, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, Check, FileSpreadsheet } from 'lucide-react'
+import { Search, X, Package, Filter, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, Check, FileSpreadsheet, Tag } from 'lucide-react'
 import { formatCurrency } from '../../utils/format.js'
 import { useData } from '../../context/DataContext.jsx'
+import { useAuth } from '../../context/AuthContext.jsx'
+import { PERFILES, normalizePerfil } from '../../utils/permisos.js'
 import { matchProductSearch } from '../../utils/productSearch.js'
+import DescuentosMarcaModal from '../admin/DescuentosMarcaModal.jsx'
 
 function useDebounce(value, delay) {
   const [debounced, setDebounced] = useState(value)
@@ -16,6 +19,7 @@ function useDebounce(value, delay) {
 
 export default function ProductosCatalog() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { productos: globalProductos, loading: globalLoading } = useData()
   const [search, setSearch] = useState('')
   const [soloConStock, setSoloConStock] = useState(false)
@@ -23,6 +27,12 @@ export default function ProductosCatalog() {
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(40)
   const [sortConfig, setSortConfig] = useState({ key: 'DESCRI', direction: 'asc' })
+  const [showDescuentosModal, setShowDescuentosModal] = useState(false)
+
+  const isAdministrator = useMemo(() => {
+    const p = normalizePerfil(user?.perfil)
+    return p === 'Administracion' || p === 'AdministracionA'
+  }, [user])
 
   const [filtroProveedor, setFiltroProveedor] = useState('')
   const [selectedProveedores, setSelectedProveedores] = useState([])
@@ -291,13 +301,29 @@ export default function ProductosCatalog() {
           </p>
         </div>
 
-        <button
-          onClick={() => navigate('/productos/presupuestos')}
-          className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-3 rounded-xl shadow-lg shadow-amber-500/20 transition-all text-[10px] uppercase tracking-widest"
-        >
-          <FileSpreadsheet size={16} /> Productos en pedidos en estado 0.0
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          {isAdministrator && (
+            <button
+              onClick={() => setShowDescuentosModal(true)}
+              className="flex items-center gap-2 bg-[#0f5da9] hover:bg-[#0b4885] text-white font-bold px-5 py-3 rounded-xl shadow-lg shadow-[#0f5da9]/20 transition-all text-[10px] uppercase tracking-widest cursor-pointer"
+            >
+              <Tag size={16} /> Descuentos por Marca
+            </button>
+          )}
+
+          <button
+            onClick={() => navigate('/productos/presupuestos')}
+            className="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold px-5 py-3 rounded-xl shadow-lg shadow-amber-500/20 transition-all text-[10px] uppercase tracking-widest cursor-pointer"
+          >
+            <FileSpreadsheet size={16} /> Productos en pedidos en estado 0.0
+          </button>
+        </div>
       </div>
+
+      <DescuentosMarcaModal 
+        isOpen={showDescuentosModal}
+        onClose={() => setShowDescuentosModal(false)}
+      />
 
       {/* Filtros */}
       <div className="bg-white rounded-[1.5rem] border border-slate-200/60 shadow-lg shadow-black/5 p-4 flex flex-col md:flex-row gap-3 items-center mx-2 z-20 relative">

@@ -10,12 +10,13 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import { useData } from '../../context/DataContext.jsx'
 import { PERFILES } from '../../utils/permisos.js'
 import { matchProductSearch } from '../../utils/productSearch.js'
+import { calculateOrderTotals, getMarcaDiscount, getBrandName } from '../../utils/discountUtils.js'
 
 export default function PedidoForm() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
-  const { fetchPedidos, clientes, productos, setPedidos } = useData()
+  const { fetchPedidos, clientes, productos, setPedidos, descuentosMarca } = useData()
   const [loading, setLoading] = useState(false)
   
   const clientRef = useRef(null)
@@ -185,9 +186,10 @@ export default function PedidoForm() {
   const handleAddItem = (prod) => {
     const codigo = prod.CODART || prod.CODIGO
     const descri = prod.DESCRI || prod.DESCRIPCION
-    const marca = prod.MARCA || prod.NombreMarca || prod.Marca || ''
+    const marca = getBrandName(prod)
     const precio = prod.CC_CIVA || prod.PRECIO_LISTA || 0
     const stock = prod.stock || 0
+    const descMarca = getMarcaDiscount(prod, descuentosMarca)
     
     const getItemCode = i => i['Codigo (más alla de si es item o nombre)'] || i['Item  codigo']
     const existing = items.find(i => getItemCode(i) === codigo)
@@ -202,10 +204,14 @@ export default function PedidoForm() {
         'Item  codigo': codigo,
         'Nombre item': descri,
         Marca: marca,
+        NombreMarca: prod.NombreMarca || (typeof prod.Marca === 'string' ? prod.Marca : marca),
+        IdMarca: typeof prod.MARCA === 'number' ? prod.MARCA : (prod.IdMarca || prod.id_marca || null),
+        MARCA: prod.MARCA,
         Precio: precio,
         Cantidad: 1,
         StockAvailable: stock,
-        Descuento: 0,
+        Descuento: descMarca,
+        DescuentoBloqueado: descMarca > 0,
         Proveedor: prod.Proveedor || '',
         Embalaje: prod.Embalaje || prod.EMBALAJE || ''
       }
@@ -235,6 +241,24 @@ export default function PedidoForm() {
     }
   }, [clientes, productos, location.search, location.state?.addItem])
 
+  // Auto-sync line item brand discounts when descuentosMarca updates
+  useEffect(() => {
+    if (!items.length || !descuentosMarca) return
+    setItems(prevItems => prevItems.map(item => {
+      const marca = getBrandName(item)
+      const descMarca = getMarcaDiscount(item, descuentosMarca)
+      if (descMarca > 0 && item.Descuento !== descMarca) {
+        return {
+          ...item,
+          Marca: marca,
+          Descuento: descMarca,
+          DescuentoBloqueado: true
+        }
+      }
+      return item
+    }))
+  }, [descuentosMarca])
+
   const handleRemoveItem = (code) => {
     setItems(items.filter(i => (i['Codigo (más alla de si es item o nombre)'] || i['Item  codigo']) !== code))
   }
@@ -244,20 +268,13 @@ export default function PedidoForm() {
   }
 
   const totals = useMemo(() => {
-    const subtotal = items.reduce((sum, item) => sum + (parseCurrency(item.Precio) * parseCurrency(item.Cantidad)), 0)
-    const discountPercent = parseCurrency(header.Descuento)
-    const discountAmount = subtotal * (discountPercent / 100)
-    const totalUnidades = items.reduce((sum, item) => sum + (parseCurrency(item.Cantidad) || 0), 0)
-    const totalItems = items.length
-
+    const calculated = calculateOrderTotals(items, header.Descuento, descuentosMarca)
     return {
-      subtotal,
-      discountAmount,
-      total: subtotal - discountAmount,
-      totalUnidades,
-      totalItems
+      ...calculated,
+      subtotal: calculated.subtotalBruto,
+      discountAmount: calculated.montoDescGeneral + calculated.montoDescMarca
     }
-  }, [items, header.Descuento])
+  }, [items, header.Descuento, descuentosMarca])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -548,7 +565,7 @@ export default function PedidoForm() {
                 <div className="absolute z-30 w-full mt-3 bg-white border border-slate-200 rounded-[2rem] shadow-2xl overflow-hidden py-2 animate-slide-up max-h-[400px] overflow-y-auto no-scrollbar">
                   {filteredProducts.length > 0 ? filteredProducts.map((p, index) => {
                     const desc = String(p.DESCRI || p.DESCRIPCION || '')
-                    const marca = String(p.NombreMarca || p.Marca || (typeof p.MARCA === 'string' ? p.MARCA : '') || '')
+                    const marca = getBrandName(p)
                     const title = (marca && !desc.toLowerCase().includes(marca.toLowerCase())) ? `${desc} - ${marca}` : desc
                     return (
                     <button
@@ -603,16 +620,28 @@ export default function PedidoForm() {
                       {items.map(item => {
                         const code = item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo']
                         const name = String(item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '')
-                        const itemMarca = String(item.NombreMarca || item.Marca || (typeof item.MARCA === 'string' ? item.MARCA : '') || '')
+                        const itemMarca = getBrandName(item)
                         const title = (itemMarca && !name.toLowerCase().includes(itemMarca.toLowerCase())) ? `${name} - ${itemMarca}` : name
                         return (
                         <tr key={code} className="hover:bg-slate-50/80 transition-colors group">
                           <td className="px-8 py-5">
                             <p className="text-base font-bold text-[#1e293b] leading-snug">{title}</p>
-                            <p className="text-sm font-bold text-slate-500 uppercase tracking-tighter mt-1">
-                              SKU: {code}
-                              {(item.Embalaje || item.EMBALAJE) && <span className="ml-2 font-semibold text-slate-400"> • Emb: {item.Embalaje || item.EMBALAJE} u</span>}
-                            </p>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <p className="text-sm font-bold text-slate-500 uppercase tracking-tighter">
+                                SKU: {code}
+                                {(item.Embalaje || item.EMBALAJE) && <span className="ml-2 font-semibold text-slate-400"> • Emb: {item.Embalaje || item.EMBALAJE} u</span>}
+                              </p>
+                              {item.Descuento > 0 && (
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-1">
+                                    🔒 Desc. Marca ({item.Descuento}%)
+                                  </span>
+                                  <span className="text-xs font-bold text-slate-500">
+                                    Bruto: <span className="line-through text-slate-400">{formatCurrency(parseCurrency(item.Precio) * parseCurrency(item.Cantidad))}</span> • Ahorro: <span className="text-amber-700 font-extrabold">-{formatCurrency((parseCurrency(item.Precio) * parseCurrency(item.Cantidad)) * (parseCurrency(item.Descuento) / 100))}</span>
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </td>
                           <td className="px-4 py-5 text-center">
                             <span className={`text-sm font-extrabold uppercase px-2.5 py-1 rounded-lg ${item.StockAvailable > 0 ? 'text-emerald-700 bg-emerald-100 border border-emerald-300/60 font-black' : 'text-red-600 bg-red-100 font-bold'}`}>
@@ -677,13 +706,25 @@ export default function PedidoForm() {
             <div className="space-y-8">
               <div className="space-y-4">
                 <div className="flex justify-between items-center text-white/60">
-                  <span className="text-xs font-extrabold uppercase tracking-[0.2em]">Subtotal</span>
-                  <span className="text-base font-black text-white tabular-nums">{formatCurrency(totals.subtotal)}</span>
+                  <span className="text-xs font-extrabold uppercase tracking-[0.2em]">Subtotal Bruto</span>
+                  <span className="text-base font-black text-white tabular-nums">{formatCurrency(totals.subtotalBruto)}</span>
                 </div>
                 
-                <div className="space-y-3">
+                {totals.montoDescMarca > 0 && (
+                  <div className="flex justify-between items-center text-amber-200 bg-amber-400/20 px-4 py-2.5 rounded-xl border border-amber-300/30">
+                    <span className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">🔒 Desc. por Marca</span>
+                    <span className="text-sm font-black tabular-nums">-{formatCurrency(totals.montoDescMarca)}</span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center text-white/50 text-[11px]">
+                  <span className="font-bold uppercase tracking-wider">Subtotal Sujeto a Desc. General</span>
+                  <span className="font-extrabold text-white/80 tabular-nums">{formatCurrency(totals.subtotalSinDescMarca)}</span>
+                </div>
+
+                <div className="space-y-3 pt-3 border-t border-white/10">
                    <div className="flex items-center justify-between">
-                     <label className="text-xs font-extrabold text-white/60 uppercase tracking-[0.2em]">Descuento (%)</label>
+                     <label className="text-xs font-extrabold text-white/60 uppercase tracking-[0.2em]">Descuento General (%)</label>
                      <div className="relative w-28">
                         <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
                         <input 
@@ -698,8 +739,8 @@ export default function PedidoForm() {
                      </div>
                    </div>
                    <div className="flex justify-between items-center">
-                     <span className="text-[11px] font-extrabold text-[#fe4a65] uppercase">Monto Descontado</span>
-                     <span className="text-sm font-black text-[#fe4a65] tabular-nums">-{formatCurrency(totals.discountAmount)}</span>
+                     <span className="text-[11px] font-extrabold text-[#fe4a65] uppercase">Monto Desc. General</span>
+                     <span className="text-sm font-black text-[#fe4a65] tabular-nums">-{formatCurrency(totals.montoDescGeneral)}</span>
                    </div>
                 </div>
               </div>

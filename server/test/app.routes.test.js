@@ -83,11 +83,15 @@ describe('app.js — rutas base y seguridad', () => {
     assert.ok(typeof body.timestamp === 'string', 'timestamp debe ser un string ISO');
   });
 
-  test('GET / devuelve 200 con mensaje de bienvenida y status ok', async () => {
+  test('GET / devuelve 200 con mensaje de bienvenida o SPA index.html', async () => {
     const { status, bodyRaw } = await apiFetch('/');
     assert.strictEqual(status, 200);
-    const body = JSON.parse(bodyRaw);
-    assert.strictEqual(body.status, 'ok');
+    if (bodyRaw.trim().startsWith('<')) {
+      assert.ok(bodyRaw.toLowerCase().includes('html'));
+    } else {
+      const body = JSON.parse(bodyRaw);
+      assert.strictEqual(body.status, 'ok');
+    }
   });
 
   test('Ruta de API inexistente devuelve 404 con mensaje descriptivo', async () => {

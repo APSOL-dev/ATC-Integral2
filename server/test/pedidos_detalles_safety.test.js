@@ -48,3 +48,23 @@ test('Validación de estado — rechaza cambiar a estado "1" si los detalles del
   assert.equal(isValidToSend(cleanStatus, detalles), false);
   assert.equal(isValidToSend(cleanStatus, [{ IDDetalle: '110195001' }]), true);
 });
+
+// 3. Test line item discount calculation for PedidoAppDeta Total
+test('Cálculo de Total Renglón — calcula correctamente el Subtotal, Monto Descuento y Total Neto con Descuento', () => {
+  const item = {
+    Cantidad: 2,
+    Precio: 14518.94,
+    Descuento: 25 // 25% desc. marca
+  };
+
+  const precio = Number(item.Precio) || 0;
+  const cant = Number(item.Cantidad) || 0;
+  const descPct = Number(item.Descuento) || 0;
+  const subtotal = Number((precio * cant).toFixed(2));
+  const montoDesc = descPct > 0 ? Number((subtotal * (descPct / 100)).toFixed(2)) : 0;
+  const totalNeto = Number((subtotal - montoDesc).toFixed(2));
+
+  assert.equal(subtotal, 29037.88);
+  assert.equal(montoDesc, 7259.47);
+  assert.equal(totalNeto, 21778.41);
+});

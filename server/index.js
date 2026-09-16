@@ -8,7 +8,8 @@ require('./src/config/mssql');
 
 const startServer = (portToTry) => {
   const server = app.listen(portToTry, async () => {
-    const actualPort = server.address().port;
+    const addr = server.address();
+    const actualPort = addr ? (typeof addr === 'string' ? addr : addr.port) : portToTry;
     console.log(`🚀 Server running on port ${actualPort}`);
     console.log(`📊 Google Sheets ID: ${process.env.SPREADSHEET_ID}`);
     console.log(`🗄️  MSSQL Host: ${process.env.MSSQL_HOST}:${process.env.MSSQL_PORT}`);

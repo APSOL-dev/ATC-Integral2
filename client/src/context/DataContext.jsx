@@ -11,6 +11,13 @@ export function DataProvider({ children }) {
   const [clientes, setClientes] = useState([])
   const [productos, setProductos] = useState([])
   const [usuarios, setUsuarios] = useState([])
+  const [descuentosMarca, setDescuentosMarca] = useState(() => {
+    try {
+      const saved = localStorage.getItem('atc_descuentos_marca')
+      if (saved) return JSON.parse(saved)
+    } catch (e) {}
+    return {}
+  })
   const [loading, setLoading] = useState(true) // true by default: first render is always loading
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [lastSync, setLastSync] = useState(null)
@@ -255,7 +262,20 @@ export function DataProvider({ children }) {
       .then(data => setProductos(Array.isArray(data) ? data : []))
       .catch(err => console.error('Error fetching productos:', err))
 
-    // 4. Fetch Usuarios in background if admin
+    // 4. Fetch Descuentos por Marca para todos los usuarios autenticados
+    fetch(`${API_URL}/descuentos-marca`, { headers })
+      .then(async res => res.ok ? res.json() : [])
+      .then(data => {
+        if (Array.isArray(data)) {
+          const map = {}
+          data.forEach(item => { if (item.marca) map[item.marca] = item.porcentaje })
+          setDescuentosMarca(map)
+          localStorage.setItem('atc_descuentos_marca', JSON.stringify(map))
+        }
+      })
+      .catch(err => console.error('Error fetching descuentos marca:', err))
+
+    // 5. Fetch Usuarios in background if admin
     if (isAdmin) {
       fetch(`${API_URL}/usuarios`, { headers })
         .then(async res => res.ok ? res.json() : [])
@@ -263,6 +283,81 @@ export function DataProvider({ children }) {
         .catch(err => console.error('Error fetching usuarios:', err))
     }
   }, [])
+
+  const fetchDescuentosMarca = useCallback(async () => {
+    const storedUser = localStorage.getItem('atc_user')
+    let userObj = null
+    try { if (storedUser) userObj = JSON.parse(storedUser) } catch {}
+    const headers = userObj?.token ? { 'Authorization': `Bearer ${userObj.token}` } : {}
+
+    try {
+      const res = await fetch(`${API_URL}/descuentos-marca`, { headers })
+      if (res.ok) {
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          const map = {}
+          data.forEach(item => { if (item.marca) map[item.marca] = item.porcentaje })
+          setDescuentosMarca(map)
+          localStorage.setItem('atc_descuentos_marca', JSON.stringify(map))
+        }
+      }
+    } catch (e) {
+      console.error('Error refreshing descuentos marca:', e)
+    }
+  }, [])
+
+  const saveDescuentoMarca = useCallback((marca, porcentaje) => {
+    if (!marca) return
+    const cleanMarca = String(marca).trim()
+    const numericPct = parseFloat(porcentaje) || 0
+
+    setDescuentosMarca(prev => {
+      const next = { ...prev, [cleanMarca]: numericPct }
+      localStorage.setItem('atc_descuentos_marca', JSON.stringify(next))
+      return next
+    })
+
+    const storedUser = localStorage.getItem('atc_user')
+    let userObj = null
+    try { if (storedUser) userObj = JSON.parse(storedUser) } catch {}
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(userObj?.token ? { 'Authorization': `Bearer ${userObj.token}` } : {})
+    }
+
+    fetch(`${API_URL}/descuentos-marca`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ marca: cleanMarca, porcentaje: numericPct, activo: true })
+    }).then(() => fetchDescuentosMarca())
+      .catch(err => console.error('Error saving descuento marca to server:', err))
+  }, [fetchDescuentosMarca])
+
+  const removeDescuentoMarca = useCallback((marca) => {
+    if (!marca) return
+    const cleanMarca = String(marca).trim()
+
+    setDescuentosMarca(prev => {
+      const next = { ...prev }
+      delete next[cleanMarca]
+      Object.keys(next).forEach(k => {
+        if (k.toLowerCase() === cleanMarca.toLowerCase()) delete next[k]
+      })
+      localStorage.setItem('atc_descuentos_marca', JSON.stringify(next))
+      return next
+    })
+
+    const storedUser = localStorage.getItem('atc_user')
+    let userObj = null
+    try { if (storedUser) userObj = JSON.parse(storedUser) } catch {}
+    const headers = userObj?.token ? { 'Authorization': `Bearer ${userObj.token}` } : {}
+
+    fetch(`${API_URL}/descuentos-marca/${encodeURIComponent(cleanMarca)}`, {
+      method: 'DELETE',
+      headers
+    }).then(() => fetchDescuentosMarca())
+      .catch(err => console.error('Error removing descuento marca from server:', err))
+  }, [fetchDescuentosMarca])
 
   // Reactive initial fetch when entering wholesale app routes or when token is ready
   useEffect(() => {
@@ -303,6 +398,9 @@ export function DataProvider({ children }) {
       setProductos,
       usuarios,
       setUsuarios,
+      descuentosMarca,
+      saveDescuentoMarca,
+      removeDescuentoMarca,
       loading, 
       isRefreshing,
       lastSync,
