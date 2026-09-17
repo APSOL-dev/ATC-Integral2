@@ -693,27 +693,16 @@ export default function PedidoDetail() {
                       {/* Pricing */}
                       <div className="text-right min-w-[110px]">
                         <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider block">Total</span>
-                        {itemDescPct > 0 ? (
-                          <>
-                            <span className="text-[11px] font-bold text-slate-400 line-through block tabular-nums leading-tight">
-                              {formatCurrency(price * qty)}
-                            </span>
-                            <p className="text-sm font-bold text-[#0f5da9] tabular-nums leading-tight">
-                              {formatCurrency((price * qty) * (1 - itemDescPct / 100))}
-                            </p>
-                            <span className="text-[9px] font-extrabold text-amber-700 block mt-0.5">
-                              Ahorro: -{formatCurrency((price * qty) * (itemDescPct / 100))}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <p className="text-sm font-bold text-[#1e293b] tabular-nums">
-                              {formatCurrency(price * qty)}
-                            </p>
-                            <p className="text-[9px] font-bold text-slate-400 tabular-nums">
-                              {formatCurrency(price)} / ud
-                            </p>
-                          </>
+                        <p className="text-sm font-bold text-[#1e293b] tabular-nums">
+                          {formatCurrency(price * qty)}
+                        </p>
+                        <p className="text-[9px] font-bold text-slate-400 tabular-nums">
+                          {formatCurrency(price)} / ud
+                        </p>
+                        {itemDescPct > 0 && (
+                          <span className="text-[9px] font-extrabold text-amber-700 block mt-0.5">
+                            Desc. Marca ({itemDescPct}%): -{formatCurrency((price * qty) * (itemDescPct / 100))}
+                          </span>
                         )}
                       </div>
                     </div>
