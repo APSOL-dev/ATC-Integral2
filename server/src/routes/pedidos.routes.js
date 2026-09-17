@@ -482,7 +482,7 @@ router.post('/', (req, res, next) => {
           'Precio': precio,
           'Subtotal (precio x cantidad)': subtotal,
           'Monto del descuento': montoDesc,
-          'Total (subtotal - monto del descuento)': totalNetoItem,
+          'Total (subtotal - monto del descuento)': subtotal,
           'Stock al momento de cargar': parseCurrency(item.StockAvailable),
           'Proveedor': item.Proveedor || '',
           PORCENT: descPct
@@ -588,7 +588,7 @@ router.patch('/:id/estado', async (req, res, next) => {
             'Precio': precio,
             'Subtotal (precio x cantidad)': subtotal,
             'Monto del descuento': montoDesc,
-            'Total (subtotal - monto del descuento)': totalNetoItem,
+            'Total (subtotal - monto del descuento)': subtotal,
             'Stock al momento de cargar': parseCurrency(item.StockAvailable || item.StockActual),
             'Proveedor': item.Proveedor || '',
             PORCENT: descPct
@@ -682,7 +682,7 @@ router.put('/:id', async (req, res, next) => {
         'Precio': precio,
         'Subtotal (precio x cantidad)': subtotal,
         'Monto del descuento': montoDesc,
-        'Total (subtotal - monto del descuento)': totalNetoItem,
+        'Total (subtotal - monto del descuento)': subtotal,
         'Stock al momento de cargar': parseCurrency(item.StockAvailable || item['Stock al momento de cargar']),
         'Proveedor': item.Proveedor || '',
         PORCENT: descPct,

@@ -237,7 +237,7 @@ async function createPedidoInDB(pedidoData, detallesData) {
               requestDeta.input('subTotal', sql.Float, itemSubtotal);
               requestDeta.input('porcent', sql.Float, itemPorcent);
               requestDeta.input('descuento', sql.Float, itemMontoDesc);
-              requestDeta.input('totalDeta', sql.Float, parseFloat(item['Total (subtotal - monto del descuento)']) || (itemSubtotal - itemMontoDesc));
+              requestDeta.input('totalDeta', sql.Float, itemSubtotal);
               requestDeta.input('cantidadPreparada', sql.Float, parseFloat(item['Cantidad preparada']) || 0);
               requestDeta.input('idRenglonGestion', sql.Int, parseInt(item.IdRenglonGestion) || null);
 
@@ -315,7 +315,7 @@ async function createPedidoInDB(pedidoData, detallesData) {
         requestDeta.input('subTotal', sql.Float, itemSubtotal);
         requestDeta.input('porcent', sql.Float, itemPorcent);
         requestDeta.input('descuento', sql.Float, itemMontoDesc);
-        requestDeta.input('totalDeta', sql.Float, parseFloat(item['Total (subtotal - monto del descuento)']) || (itemSubtotal - itemMontoDesc));
+        requestDeta.input('totalDeta', sql.Float, itemSubtotal);
         requestDeta.input('cantidadPreparada', sql.Float, parseFloat(item['Cantidad preparada']) || 0);
         requestDeta.input('idRenglonGestion', sql.Int, parseInt(item.IdRenglonGestion) || null);
 
@@ -446,7 +446,7 @@ async function updatePedidoInDB(idPedido, pedidoData, detallesData) {
         requestDeta.input('subTotal', sql.Float, itemSubtotal);
         requestDeta.input('porcent', sql.Float, itemPorcent);
         requestDeta.input('descuento', sql.Float, itemMontoDesc);
-        requestDeta.input('totalDeta', sql.Float, parseFloat(item['Total (subtotal - monto del descuento)']) || (itemSubtotal - itemMontoDesc));
+        requestDeta.input('totalDeta', sql.Float, itemSubtotal);
         requestDeta.input('cantidadPreparada', sql.Float, parseFloat(item['Cantidad preparada']) || 0);
         requestDeta.input('idRenglonGestion', sql.Int, parseInt(item.IdRenglonGestion) || null);
 
