@@ -24,13 +24,15 @@ router.get('/', async (req, res) => {
       marca_id: item.marca_id || item.id_marca || item.MARCA || item.IdMarca || null,
       marca: item.marca || item.Marca,
       porcentaje: parseFloat(item.porcentaje || item.Porcentaje || 0),
-      activo: item.activo !== false
+      activo: item.activo !== false,
+      estado: item.estado || item.Estado || 'activo',
+      fecha_baja: item.fecha_baja || item.FechaBaja || null
     }));
 
     res.json(descuentosMarcaStore);
   } catch (err) {
     console.error('Error GET /api/descuentos-marca:', err.message);
-    res.json(descuentosMarcaStore);
+    res.json(descuentosMarcaStore.filter(d => d.activo));
   }
 });
 
@@ -45,20 +47,23 @@ router.post('/', auth, async (req, res) => {
   const cleanMarca = String(marca).trim();
   const numericMarcaId = marca_id ? parseInt(marca_id, 10) : null;
 
-  // Actualizar fallback local
-  const index = descuentosMarcaStore.findIndex(d => d.marca.toLowerCase() === cleanMarca.toLowerCase());
+  // Actualizar fallback local (deshabilitar previos e insertar nuevo con ID único)
   const itemStore = {
-    id: index >= 0 ? descuentosMarcaStore[index].id : Date.now(),
+    id: Date.now(),
     marca_id: numericMarcaId,
     marca: cleanMarca,
     porcentaje: numericPorcentaje,
-    activo: Boolean(activo)
+    activo: Boolean(activo),
+    estado: activo ? 'activo' : 'deshabilitado',
+    fecha_baja: activo ? null : new Date().toISOString()
   };
-  if (index >= 0) {
-    descuentosMarcaStore[index] = itemStore;
-  } else {
-    descuentosMarcaStore.push(itemStore);
-  }
+  descuentosMarcaStore = descuentosMarcaStore.map(d => {
+    if (d.marca.toLowerCase() === cleanMarca.toLowerCase() && d.activo) {
+      return { ...d, activo: false, estado: 'deshabilitado', fecha_baja: new Date().toISOString() };
+    }
+    return d;
+  });
+  descuentosMarcaStore.push(itemStore);
 
   try {
     const payload = {
@@ -87,10 +92,15 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-// DELETE /api/descuentos-marca/:marca (Elimina a través de la vista pública public.atc_descuentos_marca_v)
+// DELETE /api/descuentos-marca/:marca (Soft delete a través de la vista pública public.atc_descuentos_marca_v)
 router.delete('/:marca', auth, async (req, res) => {
   const marcaTarget = String(req.params.marca).trim();
-  descuentosMarcaStore = descuentosMarcaStore.filter(d => d.marca.toLowerCase() !== marcaTarget.toLowerCase());
+  descuentosMarcaStore = descuentosMarcaStore.map(d => {
+    if (d.marca.toLowerCase() === marcaTarget.toLowerCase() && d.activo) {
+      return { ...d, activo: false, estado: 'deshabilitado', fecha_baja: new Date().toISOString() };
+    }
+    return d;
+  });
 
   try {
     const { error } = await supabaseService.supabase
@@ -103,7 +113,7 @@ router.delete('/:marca', auth, async (req, res) => {
       return res.status(500).json({ message: 'Error en Supabase: ' + error.message, error: error.message });
     }
 
-    res.json({ message: 'Descuento de marca eliminado con éxito de Supabase' });
+    res.json({ message: 'Descuento de marca deshabilitado con éxito en Supabase' });
   } catch (err) {
     console.error('Error DELETE /api/descuentos-marca:', err.message);
     res.status(500).json({ message: 'Error interno al eliminar descuento de marca', error: err.message });

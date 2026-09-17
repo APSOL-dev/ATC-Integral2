@@ -128,13 +128,13 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
     // El subtotal por fila debe actualizarse a $8.500
     expect(screen.getAllByText(/8\.500/).length).toBeGreaterThan(0)
 
-    // 5. Aplicar un descuento del 10%
-    const discountInput = screen.getByPlaceholderText('19')
-    fireEvent.change(discountInput, { target: { value: '10' } })
+    // 5. Verificar descuento general fijo del 19%
+    const discountInput = screen.getByDisplayValue('19')
+    expect(discountInput).toHaveAttribute('readonly')
 
-    // Validar monto de descuento final (-$850) e Importe Neto Final ($7.650) en el DOM
-    expect(screen.getAllByText(/-.*850/).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/7\.650/).length).toBeGreaterThan(0)
+    // Validar monto de descuento final 19% (-$1.615) e Importe Neto Final ($6.885) en el DOM
+    expect(screen.getAllByText(/-.*1\.615/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/6\.885/).length).toBeGreaterThan(0)
 
     // 6. Enviar Formulario
     fireEvent.click(btnSubmit)
@@ -148,7 +148,7 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
         expect.stringContaining('/pedidos'),
         expect.objectContaining({
           method: 'POST',
-          body: expect.stringContaining('"Porcentaje de descuento (%)":10')
+          body: expect.stringContaining('"Porcentaje de descuento (%)":19')
         })
       )
     })
@@ -203,7 +203,7 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
     expect(mockNavigate).not.toHaveBeenCalled()
   })
 
-  it('Caso Borde: debería enviar el pedido con descuento 0 si el input de descuento se deja vacío', async () => {
+  it('debería enviar el pedido con el descuento fijo del 19%', async () => {
     global.fetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ IDPedido: '88888' })
@@ -223,9 +223,9 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
     const productOption = screen.getByText('Látex Interior Blanco 20L')
     fireEvent.click(productOption)
 
-    // Dejar descuento vacío/vaciarlo
-    const discountInput = screen.getByPlaceholderText('19')
-    fireEvent.change(discountInput, { target: { value: '' } })
+    // Verificar que el input de descuento general esté fijo en 19% y sea readOnly
+    const discountInput = screen.getByDisplayValue('19')
+    expect(discountInput).toHaveAttribute('readonly')
 
     // Enviar
     const btnSubmit = screen.getByRole('button', { name: /Generar Pedido/i })
@@ -236,15 +236,17 @@ describe('PedidoForm: Creación de Pedidos, Cálculos y Envío', () => {
         expect.stringContaining('/pedidos'),
         expect.objectContaining({
           method: 'POST',
-          body: expect.stringContaining('"Porcentaje de descuento (%)":0')
+          body: expect.stringContaining('"Porcentaje de descuento (%)":19')
         })
       )
     })
   })
 
-  it('debería inicializar el porcentaje de descuento en 19 por defecto en la creación de un nuevo pedido', () => {
+  it('debería inicializar el porcentaje de descuento en 19 por defecto y bloqueado', () => {
     render(<PedidoForm />)
-    const discountInput = screen.getByPlaceholderText('19') || screen.getByDisplayValue('19')
+    const discountInput = screen.getByDisplayValue('19')
     expect(discountInput).toHaveValue(19)
+    expect(discountInput).toHaveAttribute('readonly')
+    expect(discountInput).toBeDisabled()
   })
 })

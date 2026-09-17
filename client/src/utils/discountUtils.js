@@ -115,10 +115,9 @@ export function getMarcaDiscount(marcaOrObj, descuentosMarca) {
  * @param {Object|Array} descuentosMarca Mapa o lista de descuentos por marca activos
  * @returns {Object} { subtotalBruto, montoDescMarca, subtotalSinDescMarca, montoDescGeneral, total, totalUnidades, totalItems }
  */
-export function calculateOrderTotals(items = [], headerDiscount = 0, descuentosMarca = {}) {
+export function calculateOrderTotals(items = [], headerDiscount = 19, descuentosMarca = {}) {
   let subtotalBruto = 0
   let montoDescMarca = 0
-  let subtotalSinDescMarca = 0
   let totalUnidades = 0
 
   const generalDiscPct = parseCurrency(headerDiscount)
@@ -137,18 +136,17 @@ export function calculateOrderTotals(items = [], headerDiscount = 0, descuentosM
     if (itemDescPct > 0) {
       const descMarcaLine = brutoLine * (itemDescPct / 100)
       montoDescMarca += descMarcaLine
-    } else {
-      subtotalSinDescMarca += brutoLine
     }
   })
 
-  const montoDescGeneral = subtotalSinDescMarca * (generalDiscPct / 100)
+  // Regla de negocio: El Descuento General (19%) aplica sobre el 100% de los productos del pedido (subtotalBruto)
+  const montoDescGeneral = subtotalBruto * (generalDiscPct / 100)
   const total = subtotalBruto - montoDescMarca - montoDescGeneral
 
   return {
     subtotalBruto,
     montoDescMarca,
-    subtotalSinDescMarca,
+    subtotalSinDescMarca: subtotalBruto,
     montoDescGeneral,
     total,
     totalUnidades,

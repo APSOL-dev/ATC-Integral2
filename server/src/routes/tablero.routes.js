@@ -1,5 +1,13 @@
 const mssqlService = require('../services/mssql.service');
 
+function parseCurrency(value) {
+  if (typeof value === 'number') return isNaN(value) ? 0 : value;
+  if (!value) return 0;
+  const str = String(value).trim().replace(/\$/g, '').replace(/\./g, '').replace(/,/g, '.');
+  const num = parseFloat(str);
+  return isNaN(num) ? 0 : num;
+}
+
 // Date Formatter helper (preserves literal time for SQL Server, converts UTC with offset for Supabase to America/Argentina/Buenos_Aires timezone)
 function formatDate(date, format = 'ISO') {
   if (!date) return ''

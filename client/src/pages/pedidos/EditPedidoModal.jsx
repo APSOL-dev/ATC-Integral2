@@ -21,7 +21,7 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
     Nombre: pedido.Nombre || pedido['Razón social (NO BD)'] || '',
     'Lugar de entrega': pedido['Lugar de entrega'] || '',
     Observaciones: pedido.Observaciones || '',
-    Descuento: pedido['Porcentaje de descuento (%)'] || 0
+    Descuento: 19
   })
 
   // Deep copy and sanitize details to avoid mutating the original until save
@@ -222,13 +222,13 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-bold text-[#fe4a65] uppercase tracking-widest flex items-center gap-2 mb-2"><Tag size={12}/> % Descuento Global</label>
+              <label className="text-[10px] font-bold text-[#fe4a65] uppercase tracking-widest flex items-center gap-2 mb-2"><Tag size={12}/> 🔒 % Descuento Global (19%)</label>
               <input 
                 type="number" 
-                min="0" max="100" step="0.1"
-                value={header.Descuento} 
-                onChange={e => setHeader({...header, Descuento: e.target.value})}
-                className="w-full bg-red-50 border border-red-100 text-[#fe4a65] px-4 py-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all font-bold text-base tabular-nums"
+                value="19" 
+                readOnly
+                disabled
+                className="w-full bg-slate-100 border border-slate-200 text-slate-500 px-4 py-3.5 rounded-xl font-bold text-base tabular-nums cursor-not-allowed opacity-80"
               />
             </div>
           </div>

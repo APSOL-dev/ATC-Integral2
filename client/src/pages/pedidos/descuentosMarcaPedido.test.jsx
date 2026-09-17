@@ -112,23 +112,23 @@ describe('Descuentos por Marca en Pedidos (Integración)', () => {
     })
     fireEvent.click(screen.getByText(/Esmalte Tersuave 4L/i).closest('button'))
 
-    // 4. Cambiar descuento general del pedido a 10%
-    const inputDescGeneral = screen.getByPlaceholderText('19')
-    fireEvent.change(inputDescGeneral, { target: { value: '10' } })
+    // 4. Verificar que el descuento general del pedido esté fijo al 19% y bloqueado (readOnly / disabled)
+    const inputDescGeneral = screen.getByDisplayValue('19')
+    expect(inputDescGeneral).toHaveAttribute('readonly')
+    expect(inputDescGeneral).toBeDisabled()
 
-    // Validar subtotales y desgloses:
+    // Validar subtotales y desgloses acumulativos:
     // Subtotal Bruto = $2.000
     // Descuento por Marca (Sinteplast 15% de $1.000) = -$150
-    // Subtotal Sujeto a Desc. General = $1.000 (solo Tersuave)
-    // Monto Desc. General (10% de $1.000) = -$100
-    // Importe Neto Final = $2.000 - $150 - $100 = $1.750
+    // Monto Desc. General (19% de $2.000) = -$380
+    // Importe Neto Final = $2.000 - $150 - $380 = $1.470
 
     await waitFor(() => {
       expect(screen.getByText(/Subtotal Bruto/i)).toBeInTheDocument()
       expect(screen.getByText(/🔒 Desc. por Marca/i)).toBeInTheDocument()
       expect(screen.getAllByText(/150/).length).toBeGreaterThan(0)
-      expect(screen.getAllByText(/100/).length).toBeGreaterThan(0)
-      expect(screen.getAllByText(/1\.750/).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/380/).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/1\.470/).length).toBeGreaterThan(0)
     })
   })
 })

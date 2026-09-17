@@ -54,7 +54,7 @@ export default function PedidoForm() {
         Nombre: p.Nombre || p['Razón social (NO BD)'] || '',
         'Lugar de entrega': p['Lugar de entrega'] || '',
         Celular: p['Celular de contacto'] || '',
-        Descuento: String(p['Porcentaje de descuento (%)'] || ''),
+        Descuento: '19',
         'Deposito que prepara': p['Deposito que prepara'] || '',
         Observaciones: p.Observaciones || '',
         'Emitido por': p['Emitido por'] || user?.nombre || 'Admin',
@@ -724,22 +724,22 @@ export default function PedidoForm() {
 
                 <div className="space-y-3 pt-3 border-t border-white/10">
                    <div className="flex items-center justify-between">
-                     <label className="text-xs font-extrabold text-white/60 uppercase tracking-[0.2em]">Descuento General (%)</label>
+                     <label className="text-xs font-extrabold text-white/80 uppercase tracking-[0.2em] flex items-center gap-1.5">
+                       🔒 Descuento General (19%)
+                     </label>
                      <div className="relative w-28">
-                        <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                        <Tag size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50" />
                         <input 
                           type="number"
-                          value={header.Descuento}
-                          onChange={(e) => setHeader({...header, Descuento: e.target.value})}
-                          onFocus={(e) => { if (e.target.value === '0') setHeader({...header, Descuento: ''}) }}
-                          onKeyDown={handleBlurOnEnter}
-                          placeholder="19"
-                          className="w-full pl-9 pr-3 py-2 bg-white/10 border border-white/20 rounded-xl text-sm font-extrabold text-white outline-none focus:border-[#fe4a65]"
+                          value="19"
+                          readOnly
+                          disabled
+                          className="w-full pl-9 pr-3 py-2 bg-white/20 border border-white/30 rounded-xl text-sm font-extrabold text-white outline-none cursor-not-allowed opacity-90"
                         />
                      </div>
                    </div>
                    <div className="flex justify-between items-center">
-                     <span className="text-[11px] font-extrabold text-[#fe4a65] uppercase">Monto Desc. General</span>
+                     <span className="text-[11px] font-extrabold text-[#fe4a65] uppercase">Monto Desc. General (19%)</span>
                      <span className="text-sm font-black text-[#fe4a65] tabular-nums">-{formatCurrency(totals.montoDescGeneral)}</span>
                    </div>
                 </div>
