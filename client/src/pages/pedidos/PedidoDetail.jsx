@@ -723,14 +723,6 @@ export default function PedidoDetail() {
             }
             </div>
             <div className="px-6 py-4 border-t border-slate-50 flex flex-col items-end gap-1.5 bg-slate-50/30">
-              <div className="flex items-center gap-6">
-                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                  {orderTotals.montoDescMarca > 0 ? 'Subtotal Bruto' : 'Subtotal'}
-                </span>
-                <span className="text-xs font-bold text-[#1e293b] tabular-nums w-28 text-right">
-                  {formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.subtotalBruto : subtotal)}
-                </span>
-              </div>
               {orderTotals.montoDescMarca > 0 && (
                 <div className="flex items-center gap-6 text-amber-700">
                   <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
@@ -739,6 +731,14 @@ export default function PedidoDetail() {
                   <span className="text-xs font-bold tabular-nums w-28 text-right">-{formatCurrency(orderTotals.montoDescMarca)}</span>
                 </div>
               )}
+              <div className="flex items-center gap-6">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                  {orderTotals.montoDescMarca > 0 ? 'Subtotal Bruto' : 'Subtotal'}
+                </span>
+                <span className="text-xs font-bold text-[#1e293b] tabular-nums w-28 text-right">
+                  {formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.subtotalBruto : subtotal)}
+                </span>
+              </div>
               {discPct > 0 && (
                 <div className="flex items-center gap-6">
                   <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Dto. General ({discPct}%)</span>
@@ -766,14 +766,6 @@ export default function PedidoDetail() {
             <div className="relative z-10 space-y-4">
               <h3 className="text-[10px] font-bold text-white/70 uppercase tracking-widest flex items-center gap-2"><CreditCard size={13} /> Liquidación</h3>
               <div className="space-y-3 border-t border-white/10 pt-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-[9px] font-bold text-white/60 uppercase tracking-widest">
-                    {orderTotals.montoDescMarca > 0 ? 'Subtotal Bruto' : 'Subtotal'}
-                  </span>
-                  <span className="text-base font-bold text-white tabular-nums">
-                    {formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.subtotalBruto : subtotal)}
-                  </span>
-                </div>
                 {orderTotals.montoDescMarca > 0 && (
                   <div className="flex justify-between items-center text-amber-300">
                     <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
@@ -782,6 +774,14 @@ export default function PedidoDetail() {
                     <span className="text-base font-bold">-{formatCurrency(orderTotals.montoDescMarca)}</span>
                   </div>
                 )}
+                <div className="flex justify-between items-center">
+                  <span className="text-[9px] font-bold text-white/60 uppercase tracking-widest">
+                    {orderTotals.montoDescMarca > 0 ? 'Subtotal Bruto' : 'Subtotal'}
+                  </span>
+                  <span className="text-base font-bold text-white tabular-nums">
+                    {formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.subtotalBruto : subtotal)}
+                  </span>
+                </div>
                 {discPct > 0 && (
                   <div className="flex justify-between items-center text-red-300">
                     <span className="text-[9px] font-bold uppercase tracking-widest">Dto. General {discPct}%</span>

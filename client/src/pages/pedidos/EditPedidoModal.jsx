@@ -445,19 +445,23 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
             {/* Resumen Final dentro de la tabla */}
             {items.length > 0 && (
               <div className="bg-slate-50 p-6 border-t border-slate-100 flex justify-end">
-                <div className="w-72 space-y-3">
-                  <div className="flex justify-between items-center text-slate-500">
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Subtotal ({totals.totalUnidades} u.)</span>
-                    <span className="font-bold tabular-nums">{formatCurrency(totals.subtotal)}</span>
-                  </div>
-                  {totals.discountAmount > 0 && (
-                    <div className="flex justify-between items-center text-[#fe4a65]">
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Desc. {header.Descuento}%</span>
-                      <span className="font-bold tabular-nums">-{formatCurrency(totals.discountAmount)}</span>
+                <div className="w-80 space-y-3">
+                  {totals.montoDescMarca > 0 && (
+                    <div className="flex justify-between items-center text-amber-800 bg-amber-100 px-3.5 py-2 rounded-xl border border-amber-300/60">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1">🔒 Desc. por Marca</span>
+                      <span className="font-extrabold tabular-nums">-{formatCurrency(totals.montoDescMarca)}</span>
                     </div>
                   )}
+                  <div className="flex justify-between items-center text-slate-700">
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Subtotal Bruto ({totals.totalUnidades} u.)</span>
+                    <span className="font-bold tabular-nums">{formatCurrency(totals.subtotalBruto)}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[#fe4a65]">
+                    <span className="text-[10px] font-bold uppercase tracking-widest">🔒 Desc. General (19%)</span>
+                    <span className="font-bold tabular-nums">-{formatCurrency(totals.montoDescGeneral)}</span>
+                  </div>
                   <div className="pt-3 border-t border-slate-200 flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-[#0f5da9] uppercase tracking-[0.2em]">Total Neto</span>
+                    <span className="text-[10px] font-bold text-[#0f5da9] uppercase tracking-[0.2em]">Total Neto Final</span>
                     <span className="text-2xl font-bold text-[#1e293b] tracking-tighter tabular-nums">{formatCurrency(totals.total)}</span>
                   </div>
                 </div>
