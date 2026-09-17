@@ -723,14 +723,6 @@ export default function PedidoDetail() {
             }
             </div>
             <div className="px-6 py-4 border-t border-slate-50 flex flex-col items-end gap-1.5 bg-slate-50/30">
-              {orderTotals.montoDescMarca > 0 && (
-                <div className="flex items-center gap-6 text-amber-700">
-                  <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
-                    <Tag size={10} /> Desc. por Marca
-                  </span>
-                  <span className="text-xs font-bold tabular-nums w-28 text-right">-{formatCurrency(orderTotals.montoDescMarca)}</span>
-                </div>
-              )}
               <div className="flex items-center gap-6">
                 <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
                   {orderTotals.montoDescMarca > 0 ? 'Subtotal Bruto' : 'Subtotal'}
@@ -745,6 +737,14 @@ export default function PedidoDetail() {
                   <span className="text-xs font-bold text-[#fe4a65] tabular-nums w-28 text-right">
                     -{formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.montoDescGeneral : discAmt)}
                   </span>
+                </div>
+              )}
+              {orderTotals.montoDescMarca > 0 && (
+                <div className="flex items-center gap-6 text-amber-700">
+                  <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
+                    <Tag size={10} /> Desc. por Marca
+                  </span>
+                  <span className="text-xs font-bold tabular-nums w-28 text-right">-{formatCurrency(orderTotals.montoDescMarca)}</span>
                 </div>
               )}
               <div className="flex items-center gap-6 border-t border-slate-200 pt-3 mt-1.5">
@@ -766,14 +766,6 @@ export default function PedidoDetail() {
             <div className="relative z-10 space-y-4">
               <h3 className="text-[10px] font-bold text-white/70 uppercase tracking-widest flex items-center gap-2"><CreditCard size={13} /> Liquidación</h3>
               <div className="space-y-3 border-t border-white/10 pt-4">
-                {orderTotals.montoDescMarca > 0 && (
-                  <div className="flex justify-between items-center text-amber-300">
-                    <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
-                      <Tag size={11} /> Desc. por Marca
-                    </span>
-                    <span className="text-base font-bold">-{formatCurrency(orderTotals.montoDescMarca)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between items-center">
                   <span className="text-[9px] font-bold text-white/60 uppercase tracking-widest">
                     {orderTotals.montoDescMarca > 0 ? 'Subtotal Bruto' : 'Subtotal'}
@@ -790,17 +782,25 @@ export default function PedidoDetail() {
                     </span>
                   </div>
                 )}
+                {orderTotals.montoDescMarca > 0 && (
+                  <div className="flex justify-between items-center text-amber-300">
+                    <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-1">
+                      <Tag size={11} /> Desc. por Marca
+                    </span>
+                    <span className="text-base font-bold">-{formatCurrency(orderTotals.montoDescMarca)}</span>
+                  </div>
+                )}
               </div>
               <div className="bg-white/10 rounded-2xl border border-white/10 p-5 text-right">
                 <p className="text-[9px] font-bold text-white/40 uppercase tracking-[0.3em] mb-1">Total Neto</p>
-                <p className="text-4xl font-bold text-white tracking-tighter tabular-nums">
+                <p className="text-3xl font-bold text-white tracking-tighter tabular-nums">
                   {formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.total : totalNeto)}
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Botones de Acción Especiales y Estados */}
+          {/* Botones de Acción / Cambios de Estado */}
           <div className="space-y-4">
             {/* Solo en 0, 0. o 0.0 */}
             {['0', '0.', '0.0'].includes(String(pedido.Estado)) && hasActions && (
@@ -953,20 +953,31 @@ export default function PedidoDetail() {
               {/* Subtotal Row */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px', borderTop: '2px solid #0f5da9', padding: '10px 12px' }}>
                 <div style={{ textAlign: 'right', fontWeight: '900', fontSize: '9px', textTransform: 'uppercase', color: '#64748b' }}>
-                  Subtotal
+                  {orderTotals.montoDescMarca > 0 ? 'Subtotal Bruto' : 'Subtotal'}
                 </div>
                 <div style={{ textAlign: 'right', fontWeight: '900', fontSize: '11px', color: '#1e293b' }}>
-                  {formatCurrency(subtotal)}
+                  {formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.subtotalBruto : subtotal)}
                 </div>
               </div>
               {/* Discount Row */}
               {discPct > 0 && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px', padding: '8px 12px' }}>
                   <div style={{ textAlign: 'right', fontWeight: '900', fontSize: '9px', textTransform: 'uppercase', color: '#fe4a65' }}>
-                    Descuento ({discPct}%)
+                    Descuento General ({discPct}%)
                   </div>
                   <div style={{ textAlign: 'right', fontWeight: '900', fontSize: '11px', color: '#fe4a65' }}>
-                    -{formatCurrency(discAmt)}
+                    -{formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.montoDescGeneral : discAmt)}
+                  </div>
+                </div>
+              )}
+              {/* Descuento por Marca Row (abajo de Descuento General) */}
+              {orderTotals.montoDescMarca > 0 && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px', padding: '8px 12px' }}>
+                  <div style={{ textAlign: 'right', fontWeight: '900', fontSize: '9px', textTransform: 'uppercase', color: '#b45309' }}>
+                    🔒 Desc. por Marca
+                  </div>
+                  <div style={{ textAlign: 'right', fontWeight: '900', fontSize: '11px', color: '#b45309' }}>
+                    -{formatCurrency(orderTotals.montoDescMarca)}
                   </div>
                 </div>
               )}
@@ -976,7 +987,7 @@ export default function PedidoDetail() {
                   Total Neto
                 </div>
                 <div style={{ textAlign: 'right', fontWeight: '900', fontSize: '16px', color: '#0f5da9', display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                  {formatCurrency(totalNeto)}
+                  {formatCurrency(orderTotals.montoDescMarca > 0 ? orderTotals.total : totalNeto)}
                 </div>
               </div>
             </div>

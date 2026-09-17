@@ -705,13 +705,6 @@ export default function PedidoForm() {
             
             <div className="space-y-8">
               <div className="space-y-4">
-                {totals.montoDescMarca > 0 && (
-                  <div className="flex justify-between items-center text-amber-200 bg-amber-400/20 px-4 py-2.5 rounded-xl border border-amber-300/30">
-                    <span className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">🔒 Desc. por Marca</span>
-                    <span className="text-sm font-black tabular-nums">-{formatCurrency(totals.montoDescMarca)}</span>
-                  </div>
-                )}
-
                 <div className="flex justify-between items-center text-white/80">
                   <span className="text-xs font-extrabold uppercase tracking-[0.2em]">Subtotal Bruto</span>
                   <span className="text-base font-black text-white tabular-nums">{formatCurrency(totals.subtotalBruto)}</span>
@@ -738,6 +731,13 @@ export default function PedidoForm() {
                      <span className="text-sm font-black text-[#fe4a65] tabular-nums">-{formatCurrency(totals.montoDescGeneral)}</span>
                    </div>
                 </div>
+
+                {totals.montoDescMarca > 0 && (
+                  <div className="flex justify-between items-center text-amber-200 bg-amber-400/20 px-4 py-2.5 rounded-xl border border-amber-300/30">
+                    <span className="text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5">🔒 Desc. por Marca</span>
+                    <span className="text-sm font-black tabular-nums">-{formatCurrency(totals.montoDescMarca)}</span>
+                  </div>
+                )}
               </div>
               
               <div className="pt-8 border-t border-white/10">
