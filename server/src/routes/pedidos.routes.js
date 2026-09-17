@@ -464,8 +464,10 @@ router.post('/', (req, res, next) => {
       const detailObjects = (detalles || []).map((item, idx) => {
         const precio = parseCurrency(item.Precio);
         const cant = parseCurrency(item.Cantidad);
-        const desc = parseCurrency(item.Descuento);
+        const descPct = parseCurrency(item.Descuento !== undefined && item.Descuento !== null ? item.Descuento : item.PORCENT);
         const subtotal = precio * cant;
+        const montoDesc = descPct > 0 ? (subtotal * (descPct / 100)) : 0;
+        const totalNetoItem = subtotal - montoDesc;
         const seq = String(idx + 1).padStart(3, '0');
         
         return {
@@ -476,13 +478,14 @@ router.post('/', (req, res, next) => {
           'Item  codigo': item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo'] || '',
           'Nombre item': item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '',
           'Cantidad': cant,
-          'Descuento': desc,
+          'Descuento': descPct,
           'Precio': precio,
           'Subtotal (precio x cantidad)': subtotal,
-          'Monto del descuento': 0,
-          'Total (subtotal - monto del descuento)': subtotal,
+          'Monto del descuento': montoDesc,
+          'Total (subtotal - monto del descuento)': totalNetoItem,
           'Stock al momento de cargar': parseCurrency(item.StockAvailable),
-          'Proveedor': item.Proveedor || ''
+          'Proveedor': item.Proveedor || '',
+          PORCENT: descPct
         };
       });
 
@@ -567,8 +570,10 @@ router.patch('/:id/estado', async (req, res, next) => {
         const sanitizedDetails = req.body.detalles.map((item, idx) => {
           const precio = parseCurrency(item.Precio);
           const cant = parseCurrency(item.Cantidad);
-          const desc = parseCurrency(item.Descuento);
+          const descPct = parseCurrency(item.Descuento !== undefined && item.Descuento !== null ? item.Descuento : item.PORCENT);
           const subtotal = precio * cant;
+          const montoDesc = descPct > 0 ? (subtotal * (descPct / 100)) : 0;
+          const totalNetoItem = subtotal - montoDesc;
           const seq = String(idx + 1).padStart(3, '0');
           
           return {
@@ -579,13 +584,14 @@ router.patch('/:id/estado', async (req, res, next) => {
             'Item  codigo': item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo'] || item.CODART || '',
             'Nombre item': item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || item.DESCRI || '',
             'Cantidad': cant,
-            'Descuento': desc,
+            'Descuento': descPct,
             'Precio': precio,
             'Subtotal (precio x cantidad)': subtotal,
-            'Monto del descuento': 0,
-            'Total (subtotal - monto del descuento)': subtotal,
+            'Monto del descuento': montoDesc,
+            'Total (subtotal - monto del descuento)': totalNetoItem,
             'Stock al momento de cargar': parseCurrency(item.StockAvailable || item.StockActual),
-            'Proveedor': item.Proveedor || ''
+            'Proveedor': item.Proveedor || '',
+            PORCENT: descPct
           };
         });
         
@@ -658,8 +664,10 @@ router.put('/:id', async (req, res, next) => {
     const newDetailRows = (detalles || []).map((item, idx) => {
       const precio = parseCurrency(item.Precio);
       const cant = parseCurrency(item.Cantidad);
-      const desc = parseCurrency(item.Descuento);
+      const descPct = parseCurrency(item.Descuento !== undefined && item.Descuento !== null ? item.Descuento : item.PORCENT);
       const subtotal = precio * cant;
+      const montoDesc = descPct > 0 ? (subtotal * (descPct / 100)) : 0;
+      const totalNetoItem = subtotal - montoDesc;
       const seq = String(idx + 1).padStart(3, '0');
       
       return {
@@ -670,14 +678,14 @@ router.put('/:id', async (req, res, next) => {
         'Item  codigo': item['Codigo (más alla de si es item o nombre)'] || item['Item  codigo'] || '',
         'Nombre item': item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '',
         'Cantidad': cant,
-        'Descuento': desc,
+        'Descuento': descPct,
         'Precio': precio,
         'Subtotal (precio x cantidad)': subtotal,
-        'Monto del descuento': 0,
-        'Total (subtotal - monto del descuento)': subtotal,
+        'Monto del descuento': montoDesc,
+        'Total (subtotal - monto del descuento)': totalNetoItem,
         'Stock al momento de cargar': parseCurrency(item.StockAvailable || item['Stock al momento de cargar']),
         'Proveedor': item.Proveedor || '',
-        PORCENT: parseCurrency(item.PORCENT),
+        PORCENT: descPct,
         CantidadPreparada: parseCurrency(item['Cantidad preparada'] || item.CantidadPreparada),
         IdRenglonGestion: item.IdRenglonGestion || null
       };

@@ -219,17 +219,25 @@ async function createPedidoInDB(pedidoData, detallesData) {
                 )
               `;
               
+              const itemPrecio = parseFloat(item.Precio) || 0;
+              const itemCant = parseFloat(item.Cantidad) || 0;
+              const itemSubtotal = parseFloat(item['Subtotal (precio x cantidad)']) || (itemPrecio * itemCant);
+              const itemPorcent = item.PORCENT !== undefined && item.PORCENT !== null ? parseFloat(item.PORCENT) : (parseFloat(item.Descuento) <= 100 ? parseFloat(item.Descuento) : 0);
+              const itemMontoDesc = item['Monto del descuento'] !== undefined && item['Monto del descuento'] !== null
+                ? parseFloat(item['Monto del descuento'])
+                : (itemPorcent > 0 ? (itemSubtotal * (itemPorcent / 100)) : (parseFloat(item.Descuento) > 100 ? parseFloat(item.Descuento) : 0));
+
               const requestDeta = new sql.Request(transaction);
               requestDeta.input('idPedido', sql.Int, item.IDPedido);
               requestDeta.input('idDetalle', sql.Int, safeParseInt32(item.IDDetalle));
               requestDeta.input('itemCodigo', sql.Int, parseInt(item['Codigo (más alla de si es item o nombre)']) || null);
               requestDeta.input('nombreItem', sql.NVarChar(100), item['Nombre (más alla de si es item o nombre)'] || '');
-              requestDeta.input('cantidad', sql.Float, parseFloat(item.Cantidad) || 0);
-              requestDeta.input('precio', sql.Float, parseFloat(item.Precio) || 0);
-              requestDeta.input('subTotal', sql.Float, parseFloat(item['Subtotal (precio x cantidad)']) || 0);
-              requestDeta.input('porcent', sql.Float, parseFloat(item.PORCENT) || 0);
-              requestDeta.input('descuento', sql.Float, parseFloat(item.Descuento) || 0);
-              requestDeta.input('totalDeta', sql.Float, parseFloat(item['Total (subtotal - monto del descuento)']) || 0);
+              requestDeta.input('cantidad', sql.Float, itemCant);
+              requestDeta.input('precio', sql.Float, itemPrecio);
+              requestDeta.input('subTotal', sql.Float, itemSubtotal);
+              requestDeta.input('porcent', sql.Float, itemPorcent);
+              requestDeta.input('descuento', sql.Float, itemMontoDesc);
+              requestDeta.input('totalDeta', sql.Float, parseFloat(item['Total (subtotal - monto del descuento)']) || (itemSubtotal - itemMontoDesc));
               requestDeta.input('cantidadPreparada', sql.Float, parseFloat(item['Cantidad preparada']) || 0);
               requestDeta.input('idRenglonGestion', sql.Int, parseInt(item.IdRenglonGestion) || null);
 
@@ -289,17 +297,25 @@ async function createPedidoInDB(pedidoData, detallesData) {
           )
         `;
         
+        const itemPrecio = parseFloat(item.Precio) || 0;
+        const itemCant = parseFloat(item.Cantidad) || 0;
+        const itemSubtotal = parseFloat(item['Subtotal (precio x cantidad)']) || (itemPrecio * itemCant);
+        const itemPorcent = item.PORCENT !== undefined && item.PORCENT !== null ? parseFloat(item.PORCENT) : (parseFloat(item.Descuento) <= 100 ? parseFloat(item.Descuento) : 0);
+        const itemMontoDesc = item['Monto del descuento'] !== undefined && item['Monto del descuento'] !== null
+          ? parseFloat(item['Monto del descuento'])
+          : (itemPorcent > 0 ? (itemSubtotal * (itemPorcent / 100)) : (parseFloat(item.Descuento) > 100 ? parseFloat(item.Descuento) : 0));
+
         const requestDeta = new sql.Request(transaction);
         requestDeta.input('idPedido', sql.Int, item.IDPedido);
         requestDeta.input('idDetalle', sql.Int, safeParseInt32(item.IDDetalle));
         requestDeta.input('itemCodigo', sql.Int, parseInt(item['Codigo (más alla de si es item o nombre)']) || null);
         requestDeta.input('nombreItem', sql.NVarChar(100), item['Nombre (más alla de si es item o nombre)'] || '');
-        requestDeta.input('cantidad', sql.Float, parseFloat(item.Cantidad) || 0);
-        requestDeta.input('precio', sql.Float, parseFloat(item.Precio) || 0);
-        requestDeta.input('subTotal', sql.Float, parseFloat(item['Subtotal (precio x cantidad)']) || 0);
-        requestDeta.input('porcent', sql.Float, parseFloat(item.PORCENT) || 0);
-        requestDeta.input('descuento', sql.Float, parseFloat(item.Descuento) || 0);
-        requestDeta.input('totalDeta', sql.Float, parseFloat(item['Total (subtotal - monto del descuento)']) || 0);
+        requestDeta.input('cantidad', sql.Float, itemCant);
+        requestDeta.input('precio', sql.Float, itemPrecio);
+        requestDeta.input('subTotal', sql.Float, itemSubtotal);
+        requestDeta.input('porcent', sql.Float, itemPorcent);
+        requestDeta.input('descuento', sql.Float, itemMontoDesc);
+        requestDeta.input('totalDeta', sql.Float, parseFloat(item['Total (subtotal - monto del descuento)']) || (itemSubtotal - itemMontoDesc));
         requestDeta.input('cantidadPreparada', sql.Float, parseFloat(item['Cantidad preparada']) || 0);
         requestDeta.input('idRenglonGestion', sql.Int, parseInt(item.IdRenglonGestion) || null);
 
@@ -412,17 +428,25 @@ async function updatePedidoInDB(idPedido, pedidoData, detallesData) {
           )
         `;
         
+        const itemPrecio = parseFloat(item.Precio) || 0;
+        const itemCant = parseFloat(item.Cantidad) || 0;
+        const itemSubtotal = parseFloat(item['Subtotal (precio x cantidad)']) || (itemPrecio * itemCant);
+        const itemPorcent = item.PORCENT !== undefined && item.PORCENT !== null ? parseFloat(item.PORCENT) : (parseFloat(item.Descuento) <= 100 ? parseFloat(item.Descuento) : 0);
+        const itemMontoDesc = item['Monto del descuento'] !== undefined && item['Monto del descuento'] !== null
+          ? parseFloat(item['Monto del descuento'])
+          : (itemPorcent > 0 ? (itemSubtotal * (itemPorcent / 100)) : (parseFloat(item.Descuento) > 100 ? parseFloat(item.Descuento) : 0));
+
         const requestDeta = new sql.Request(transaction);
         requestDeta.input('idPedido', sql.Int, parseInt(idPedido));
         requestDeta.input('idDetalle', sql.Int, safeParseInt32(item.IDDetalle));
         requestDeta.input('itemCodigo', sql.Int, parseInt(item['Codigo (más alla de si es item o nombre)']) || null);
         requestDeta.input('nombreItem', sql.NVarChar(100), item['Nombre (más alla de si es item o nombre)'] || '');
-        requestDeta.input('cantidad', sql.Float, parseFloat(item.Cantidad) || 0);
-        requestDeta.input('precio', sql.Float, parseFloat(item.Precio) || 0);
-        requestDeta.input('subTotal', sql.Float, parseFloat(item['Subtotal (precio x cantidad)']) || 0);
-        requestDeta.input('porcent', sql.Float, parseFloat(item.PORCENT) || 0);
-        requestDeta.input('descuento', sql.Float, parseFloat(item.Descuento) || 0);
-        requestDeta.input('totalDeta', sql.Float, parseFloat(item['Total (subtotal - monto del descuento)']) || 0);
+        requestDeta.input('cantidad', sql.Float, itemCant);
+        requestDeta.input('precio', sql.Float, itemPrecio);
+        requestDeta.input('subTotal', sql.Float, itemSubtotal);
+        requestDeta.input('porcent', sql.Float, itemPorcent);
+        requestDeta.input('descuento', sql.Float, itemMontoDesc);
+        requestDeta.input('totalDeta', sql.Float, parseFloat(item['Total (subtotal - monto del descuento)']) || (itemSubtotal - itemMontoDesc));
         requestDeta.input('cantidadPreparada', sql.Float, parseFloat(item['Cantidad preparada']) || 0);
         requestDeta.input('idRenglonGestion', sql.Int, parseInt(item.IdRenglonGestion) || null);
 
