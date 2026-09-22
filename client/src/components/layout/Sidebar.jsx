@@ -93,7 +93,7 @@ export default function Sidebar() {
           </button>
 
           <div className="text-center text-[10px] text-white/30 font-bold mt-3 tracking-widest uppercase">
-            v2.4
+            v2.5
           </div>
         </div>
       </div>
