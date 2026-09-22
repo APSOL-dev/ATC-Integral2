@@ -26,7 +26,8 @@ export default function DescuentosMarcaModal({ isOpen, onClose }) {
   const handleSave = (e) => {
     e.preventDefault()
     if (!marcaInput) return alert('Seleccione o ingrese una marca')
-    const pct = parseFloat(porcentajeInput)
+    const rawVal = String(porcentajeInput).replace(',', '.').trim()
+    const pct = parseFloat(rawVal)
     if (isNaN(pct) || pct < 0 || pct > 100) return alert('Ingrese un porcentaje válido entre 0 y 100')
 
     saveDescuentoMarca(marcaInput, pct)
@@ -104,15 +105,15 @@ export default function DescuentosMarcaModal({ isOpen, onClose }) {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">% Descuento</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">% Descuento (hasta 4 decimales)</label>
                 <input
                   type="number"
                   min="0"
                   max="100"
-                  step="0.5"
+                  step="any"
                   value={porcentajeInput}
                   onChange={(e) => setPorcentajeInput(e.target.value)}
-                  placeholder="Ej. 15"
+                  placeholder="Ej. 7.4074"
                   className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-bold text-[#1e293b] focus:ring-4 focus:ring-[#0f5da9]/10 focus:border-[#0f5da9] outline-none"
                 />
               </div>

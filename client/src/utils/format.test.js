@@ -80,6 +80,15 @@ describe('parseCurrency', () => {
   it('parsea string con separadores de miles "5.000" → 5000', () => {
     expect(parseCurrency('5.000')).toBe(5000)
   })
+  it('parsea strings con hasta 4 decimales con punto "15.2534" → 15.2534', () => {
+    expect(parseCurrency('15.2534')).toBe(15.2534)
+  })
+  it('parsea strings con hasta 4 decimales con coma "15,2534" → 15.2534', () => {
+    expect(parseCurrency('15,2534')).toBe(15.2534)
+  })
+  it('parsea decimales pequeños "0.1234" → 0.1234', () => {
+    expect(parseCurrency('0.1234')).toBe(0.1234)
+  })
 })
 
 // ---------------------------------------------------------------------------

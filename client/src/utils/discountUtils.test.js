@@ -126,5 +126,44 @@ describe('discountUtils: Cálculo de Descuentos por Marca y Descuento General', 
       expect(result.montoDescGeneral).toBe(380) // 19% de 2000
       expect(result.total).toBe(1620)
     })
+
+    it('debería calcular y mantener precisión exacta con descuentos por marca de hasta 4 decimales (ej. 15.2534%)', () => {
+      const descuentosConDecimales = {
+        'Sinteplast': 15.2534,
+        'Alba': 8.875
+      }
+
+      const items = [
+        {
+          'Item  codigo': '101',
+          Precio: 10000,
+          Cantidad: 1,
+          Marca: 'Sinteplast',
+          Descuento: 15.2534
+        },
+        {
+          'Item  codigo': '102',
+          Precio: 5000,
+          Cantidad: 1,
+          Marca: 'Alba',
+          Descuento: 8.875
+        }
+      ]
+
+      // Subtotal Bruto: 15000
+      // Descuento General 19%: 15000 * 0.19 = 2850
+      // Item 101 Base con 19%: 10000 * 0.81 = 8100 -> Desc. Marca: 8100 * 0.152534 = 1235.5254
+      // Item 102 Base con 19%: 5000 * 0.81 = 4050 -> Desc. Marca: 4050 * 0.08875 = 359.4375
+      // Total Desc. Marca = 1235.5254 + 359.4375 = 1594.9629
+      // Total Neto Final = 15000 - 2850 - 1594.9629 = 10555.0371
+
+      const result = calculateOrderTotals(items, 19, descuentosConDecimales)
+
+      expect(result.subtotalBruto).toBe(15000)
+      expect(result.montoDescGeneral).toBe(2850)
+      expect(result.montoDescMarca).toBeCloseTo(1594.9629, 4)
+      expect(result.total).toBeCloseTo(10555.0371, 4)
+    })
   })
 })
+

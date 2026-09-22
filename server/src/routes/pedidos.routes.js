@@ -90,7 +90,30 @@ function localNow() {
 function parseCurrency(value) {
   if (value == null || value === '') return 0;
   if (typeof value === 'number') return value;
-  const num = parseFloat(String(value).replace(/\./g, '').replace(',', '.'));
+  const str = String(value).trim();
+  if (!str) return 0;
+
+  if (str.includes('.') && str.includes(',')) {
+    if (str.indexOf('.') < str.indexOf(',')) {
+      return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0;
+    } else {
+      return parseFloat(str.replace(/,/g, '')) || 0;
+    }
+  }
+
+  if (str.includes(',')) {
+    return parseFloat(str.replace(',', '.')) || 0;
+  }
+
+  if ((str.match(/\./g) || []).length > 1) {
+    return parseFloat(str.replace(/\./g, '')) || 0;
+  }
+
+  if (/^\d{1,3}\.\d{3}$/.test(str)) {
+    return parseFloat(str.replace(/\./g, '')) || 0;
+  }
+
+  const num = parseFloat(str);
   return isNaN(num) ? 0 : num;
 }
 

@@ -37,7 +37,37 @@ export function parseDate(value) {
 export function parseCurrency(value) {
   if (value == null || value === '') return 0
   if (typeof value === 'number') return value
-  const num = parseFloat(String(value).replace(/\./g, '').replace(',', '.'))
+  const str = String(value).trim()
+  if (!str) return 0
+
+  // Format with both . and ,
+  if (str.includes('.') && str.includes(',')) {
+    if (str.indexOf('.') < str.indexOf(',')) {
+      // Latin format '1.250,50'
+      return parseFloat(str.replace(/\./g, '').replace(',', '.')) || 0
+    } else {
+      // US format '1,250.50'
+      return parseFloat(str.replace(/,/g, '')) || 0
+    }
+  }
+
+  // Comma only (Latin decimal) '15,2534' or '1250,5'
+  if (str.includes(',')) {
+    return parseFloat(str.replace(',', '.')) || 0
+  }
+
+  // Dot only:
+  // Multiple dots: '1.000.000' -> thousands
+  if ((str.match(/\./g) || []).length > 1) {
+    return parseFloat(str.replace(/\./g, '')) || 0
+  }
+
+  // Single dot thousands separator check (e.g. '5.000', '125.000') vs decimal ('15.2534', '15.5', '12.50')
+  if (/^\d{1,3}\.\d{3}$/.test(str)) {
+    return parseFloat(str.replace(/\./g, '')) || 0
+  }
+
+  const num = parseFloat(str)
   return isNaN(num) ? 0 : num
 }
 
