@@ -166,9 +166,13 @@ function mapDbPedidoToSheetFormat(dbP) {
 function mapDbDetalleToSheetFormat(dbD) {
   const precio = parseCurrency(dbD.Precio);
   const cant = parseCurrency(dbD.Cantidad);
-  const descPct = parseCurrency(dbD.Descuento);
+  const descPct = dbD.PORCENT !== undefined && dbD.PORCENT !== null
+    ? parseCurrency(dbD.PORCENT)
+    : (parseCurrency(dbD.Descuento) <= 100 ? parseCurrency(dbD.Descuento) : 0);
   const subtotal = dbD.Sub_Total ? parseCurrency(dbD.Sub_Total) : (precio * cant);
-  const montoDesc = descPct > 0 ? (subtotal * (descPct / 100)) : 0;
+  const montoDesc = dbD.Descuento !== undefined && dbD.Descuento !== null && parseCurrency(dbD.Descuento) > 100
+    ? parseCurrency(dbD.Descuento)
+    : (descPct > 0 ? (subtotal * 0.81 * (descPct / 100)) : 0);
   const totalNeto = dbD.Total && dbD.Total !== subtotal ? parseCurrency(dbD.Total) : (subtotal - montoDesc);
 
   return {
@@ -180,6 +184,7 @@ function mapDbDetalleToSheetFormat(dbD) {
     'Codigo (más alla de si es item o nombre)': dbD.ItemCodigo ? String(dbD.ItemCodigo) : '',
     Cantidad: cant,
     Descuento: descPct,
+    PORCENT: descPct,
     Precio: precio,
     'Cantidad preparada': dbD.CantidadPreparada || 0,
     'Subtotal (precio x cantidad)': subtotal,
@@ -461,12 +466,16 @@ router.post('/', (req, res, next) => {
       
       await supabaseService.upsertRow('atc_pedidos_v', pedidoData);
       
+      const headerDescPct = parseCurrency(header.Descuento || header['Porcentaje de descuento (%)'] || 19);
+      const generalMultiplier = Math.max(0, 1 - (headerDescPct / 100));
+
       const detailObjects = (detalles || []).map((item, idx) => {
         const precio = parseCurrency(item.Precio);
         const cant = parseCurrency(item.Cantidad);
         const descPct = parseCurrency(item.Descuento !== undefined && item.Descuento !== null ? item.Descuento : item.PORCENT);
         const subtotal = precio * cant;
-        const montoDesc = descPct > 0 ? (subtotal * (descPct / 100)) : 0;
+        const baseConDescGeneral = subtotal * generalMultiplier;
+        const montoDesc = descPct > 0 ? (baseConDescGeneral * (descPct / 100)) : 0;
         const totalNetoItem = subtotal - montoDesc;
         const seq = String(idx + 1).padStart(3, '0');
         
@@ -482,7 +491,7 @@ router.post('/', (req, res, next) => {
           'Precio': precio,
           'Subtotal (precio x cantidad)': subtotal,
           'Monto del descuento': montoDesc,
-          'Total (subtotal - monto del descuento)': subtotal,
+          'Total (subtotal - monto del descuento)': totalNetoItem,
           'Stock al momento de cargar': parseCurrency(item.StockAvailable),
           'Proveedor': item.Proveedor || '',
           PORCENT: descPct
@@ -567,12 +576,16 @@ router.patch('/:id/estado', async (req, res, next) => {
       // Auto-recovery: If Supabase has 0 details but client payload provided details, auto-persist to Supabase first!
       if ((!detalles || detalles.length === 0) && req.body.detalles && req.body.detalles.length > 0) {
         console.log(`[AUTO-RECOVERY] Auto-persisting ${req.body.detalles.length} details to Supabase for IDPedido ${pedidoId}`);
+        const headerDescPct = parseCurrency(pedidoObj['Porcentaje de descuento (%)'] || pedidoObj.PorcentajeDescuento || 19);
+        const generalMultiplier = Math.max(0, 1 - (headerDescPct / 100));
+
         const sanitizedDetails = req.body.detalles.map((item, idx) => {
           const precio = parseCurrency(item.Precio);
           const cant = parseCurrency(item.Cantidad);
           const descPct = parseCurrency(item.Descuento !== undefined && item.Descuento !== null ? item.Descuento : item.PORCENT);
           const subtotal = precio * cant;
-          const montoDesc = descPct > 0 ? (subtotal * (descPct / 100)) : 0;
+          const baseConDescGeneral = subtotal * generalMultiplier;
+          const montoDesc = descPct > 0 ? (baseConDescGeneral * (descPct / 100)) : 0;
           const totalNetoItem = subtotal - montoDesc;
           const seq = String(idx + 1).padStart(3, '0');
           
@@ -588,7 +601,7 @@ router.patch('/:id/estado', async (req, res, next) => {
             'Precio': precio,
             'Subtotal (precio x cantidad)': subtotal,
             'Monto del descuento': montoDesc,
-            'Total (subtotal - monto del descuento)': subtotal,
+            'Total (subtotal - monto del descuento)': totalNetoItem,
             'Stock al momento de cargar': parseCurrency(item.StockAvailable || item.StockActual),
             'Proveedor': item.Proveedor || '',
             PORCENT: descPct
@@ -661,12 +674,16 @@ router.put('/:id', async (req, res, next) => {
     const dbPedidos = await mssqlService.getPedidosFromDB().catch(() => []);
     const dbPedido = dbPedidos.find(p => String(p.IDPedido) === String(pedidoId));
     
+    const headerDescPct = parseCurrency(header.Descuento || header['Porcentaje de descuento (%)'] || (dbPedido ? dbPedido.PorcentajeDescuento : 19) || 19);
+    const generalMultiplier = Math.max(0, 1 - (headerDescPct / 100));
+
     const newDetailRows = (detalles || []).map((item, idx) => {
       const precio = parseCurrency(item.Precio);
       const cant = parseCurrency(item.Cantidad);
       const descPct = parseCurrency(item.Descuento !== undefined && item.Descuento !== null ? item.Descuento : item.PORCENT);
       const subtotal = precio * cant;
-      const montoDesc = descPct > 0 ? (subtotal * (descPct / 100)) : 0;
+      const baseConDescGeneral = subtotal * generalMultiplier;
+      const montoDesc = descPct > 0 ? (baseConDescGeneral * (descPct / 100)) : 0;
       const totalNetoItem = subtotal - montoDesc;
       const seq = String(idx + 1).padStart(3, '0');
       
@@ -682,7 +699,7 @@ router.put('/:id', async (req, res, next) => {
         'Precio': precio,
         'Subtotal (precio x cantidad)': subtotal,
         'Monto del descuento': montoDesc,
-        'Total (subtotal - monto del descuento)': subtotal,
+        'Total (subtotal - monto del descuento)': totalNetoItem,
         'Stock al momento de cargar': parseCurrency(item.StockAvailable || item['Stock al momento de cargar']),
         'Proveedor': item.Proveedor || '',
         PORCENT: descPct,

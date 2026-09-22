@@ -73,7 +73,7 @@ export default function PedidoForm() {
           Precio: parseCurrency(item.Precio),
           Cantidad: parseCurrency(item.Cantidad),
           StockAvailable: liveStock,
-          Descuento: parseCurrency(item.Descuento)
+          Descuento: (item.PORCENT !== undefined && item.PORCENT !== null && parseCurrency(item.PORCENT) <= 100) ? parseCurrency(item.PORCENT) : (parseCurrency(item.Descuento) <= 100 ? parseCurrency(item.Descuento) : 0)
         }
       })
       
@@ -632,14 +632,9 @@ export default function PedidoForm() {
                                 {(item.Embalaje || item.EMBALAJE) && <span className="ml-2 font-semibold text-slate-400"> • Emb: {item.Embalaje || item.EMBALAJE} u</span>}
                               </p>
                               {item.Descuento > 0 && (
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-1">
-                                    🔒 Desc. Marca ({item.Descuento}%)
-                                  </span>
-                                  <span className="text-xs font-bold text-slate-500">
-                                    Bruto: <span className="line-through text-slate-400">{formatCurrency(parseCurrency(item.Precio) * parseCurrency(item.Cantidad))}</span> • Ahorro: <span className="text-amber-700 font-extrabold">-{formatCurrency((parseCurrency(item.Precio) * parseCurrency(item.Cantidad)) * (parseCurrency(item.Descuento) / 100))}</span>
-                                  </span>
-                                </div>
+                                <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-1">
+                                  🔒 Desc. Marca ({item.Descuento}%)
+                                </span>
                               )}
                             </div>
                           </td>

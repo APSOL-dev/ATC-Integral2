@@ -36,7 +36,8 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
         const itemMarca = getBrandName(item) || getBrandName(foundProduct)
         const liveStock = foundProduct ? (foundProduct.stock ?? foundProduct.StockAvailable ?? 0) : parseCurrency(item['Stock al momento de cargar'] || item.StockAvailable)
 
-        const existingDesc = parseCurrency(item.Descuento)
+        const rawItemDesc = item.PORCENT !== undefined && item.PORCENT !== null ? item.PORCENT : item.Descuento
+        const existingDesc = (rawItemDesc !== undefined && rawItemDesc !== null && parseCurrency(rawItemDesc) > 0 && parseCurrency(rawItemDesc) <= 100) ? parseCurrency(rawItemDesc) : 0
         const descMarca = getMarcaDiscount(itemMarca || item || foundProduct, descuentosMarca)
         const finalDesc = existingDesc > 0 ? existingDesc : descMarca
 
@@ -364,8 +365,8 @@ export default function EditPedidoModal({ pedido, onClose, onSave }) {
                             Stock: {item.StockAvailable || 0}
                           </span>
                           {item.Descuento > 0 && (
-                            <span className="text-xs font-bold text-slate-500">
-                              Bruto: <span className="line-through text-slate-400">{formatCurrency(parseCurrency(item.Precio) * parseCurrency(item.Cantidad))}</span> • Ahorro {item.Descuento}%: <span className="text-amber-700 font-extrabold">-{formatCurrency((parseCurrency(item.Precio) * parseCurrency(item.Cantidad)) * (parseCurrency(item.Descuento) / 100))}</span>
+                            <span className="text-[10px] font-extrabold text-amber-800 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-1">
+                              🔒 Desc. Marca ({item.Descuento}%)
                             </span>
                           )}
                         </div>

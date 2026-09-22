@@ -117,18 +117,19 @@ describe('Descuentos por Marca en Pedidos (Integración)', () => {
     expect(inputDescGeneral).toHaveAttribute('readonly')
     expect(inputDescGeneral).toBeDisabled()
 
-    // Validar subtotales y desgloses acumulativos:
+    // Validar subtotales y desgloses acumulativos en cascada (Opción 2):
     // Subtotal Bruto = $2.000
-    // Descuento por Marca (Sinteplast 15% de $1.000) = -$150
     // Monto Desc. General (19% de $2.000) = -$380
-    // Importe Neto Final = $2.000 - $150 - $380 = $1.470
+    // Base Sinteplast con 19% ($1.000 * 0.81) = $810
+    // Descuento por Marca (Sinteplast 15% de $810) = -$121,50 (renderizado por formatCurrency como $122)
+    // Importe Neto Final = $2.000 - $380 - $121,50 = $1.498,50 (renderizado por formatCurrency como $1.499)
 
     await waitFor(() => {
       expect(screen.getByText(/Subtotal Bruto/i)).toBeInTheDocument()
       expect(screen.getByText(/🔒 Desc. por Marca/i)).toBeInTheDocument()
-      expect(screen.getAllByText(/150/).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/122/).length).toBeGreaterThan(0)
       expect(screen.getAllByText(/380/).length).toBeGreaterThan(0)
-      expect(screen.getAllByText(/1\.470/).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/1\.499|1,499/).length).toBeGreaterThan(0)
     })
   })
 })

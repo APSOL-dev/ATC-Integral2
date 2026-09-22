@@ -135,9 +135,13 @@ function mapDbPedidoToSheetFormat(dbP) {
 function mapDbDetalleToSheetFormat(dbD) {
   const precio = parseCurrency(dbD.Precio);
   const cant = parseCurrency(dbD.Cantidad);
-  const descPct = parseCurrency(dbD.Descuento);
+  const descPct = dbD.PORCENT !== undefined && dbD.PORCENT !== null
+    ? parseCurrency(dbD.PORCENT)
+    : (parseCurrency(dbD.Descuento) <= 100 ? parseCurrency(dbD.Descuento) : 0);
   const subtotal = dbD.Sub_Total ? parseCurrency(dbD.Sub_Total) : (precio * cant);
-  const montoDesc = descPct > 0 ? (subtotal * (descPct / 100)) : 0;
+  const montoDesc = dbD.Descuento !== undefined && dbD.Descuento !== null && parseCurrency(dbD.Descuento) > 100
+    ? parseCurrency(dbD.Descuento)
+    : (descPct > 0 ? (subtotal * 0.81 * (descPct / 100)) : 0);
   const totalNeto = dbD.Total && dbD.Total !== subtotal ? parseCurrency(dbD.Total) : (subtotal - montoDesc);
 
   return {
@@ -149,6 +153,7 @@ function mapDbDetalleToSheetFormat(dbD) {
     'Codigo (más alla de si es item o nombre)': dbD.ItemCodigo ? String(dbD.ItemCodigo) : '',
     Cantidad: cant,
     Descuento: descPct,
+    PORCENT: descPct,
     Precio: precio,
     'Cantidad preparada': dbD.CantidadPrepared || dbD.CantidadPreparada || 0,
     'Subtotal (precio x cantidad)                   ': subtotal,

@@ -68,14 +68,14 @@ describe('discountUtils: Cálculo de Descuentos por Marca y Descuento General', 
   })
 
   describe('calculateOrderTotals', () => {
-    it('debería aplicar descuento de marca a ítems promocionados y descuento general (19%) a TODOS los productos del pedido acumulándose', () => {
+    it('debería aplicar descuento general (19%) sobre el total bruto y descuento de marca sobre el importe con descuento general aplicado (Opción 2 en cascada)', () => {
       const items = [
         {
           'Item  codigo': '101',
           Precio: 1000,
           Cantidad: 2,
           Marca: 'Sinteplast',
-          Descuento: 15 // Bruto 2000, Desc. Marca 15%: 300
+          Descuento: 15 // Bruto 2000, Base con 19%: 1620, Desc. Marca 15%: 243
         },
         {
           'Item  codigo': '102',
@@ -91,27 +91,27 @@ describe('discountUtils: Cálculo de Descuentos por Marca y Descuento General', 
       const result = calculateOrderTotals(items, headerDiscount, descuentosMarcaMock)
 
       expect(result.subtotalBruto).toBe(3000)
-      expect(result.montoDescMarca).toBe(300)
       expect(result.montoDescGeneral).toBe(570) // 19% de 3000 completo
-      expect(result.total).toBe(2130) // 3000 - 300 - 570 = 2130
+      expect(result.montoDescMarca).toBe(243) // 15% de 1620 (base de Sinteplast con 19% aplicado)
+      expect(result.total).toBe(2187) // 3000 - 570 - 243 = 2187
     })
 
-    it('debería acumular el descuento general (19%) incluso cuando todos los productos tienen descuento por marca', () => {
+    it('debería calcular en cascada cuando todos los productos tienen descuento por marca', () => {
       const items = [
-        { Precio: 1000, Cantidad: 1, Marca: 'Sinteplast', Descuento: 15 }, // Desc marca: 150
-        { Precio: 2000, Cantidad: 1, Marca: 'Alba', Descuento: 10 }       // Desc marca: 200
+        { Precio: 1000, Cantidad: 1, Marca: 'Sinteplast', Descuento: 15 }, // Base 19%: 810 -> Desc marca 15%: 121.5
+        { Precio: 2000, Cantidad: 1, Marca: 'Alba', Descuento: 10 }       // Base 19%: 1620 -> Desc marca 10%: 162
       ]
 
       const result = calculateOrderTotals(items, 19, descuentosMarcaMock)
 
       // Subtotal Bruto: 3000
-      // Desc. Marca Total: 350
       // Desc. General 19% sobre 3000: 570
-      // Total: 3000 - 350 - 570 = 2080
+      // Desc. Marca Total (121.5 + 162): 283.5
+      // Total: 3000 - 570 - 283.5 = 2146.5
       expect(result.subtotalBruto).toBe(3000)
-      expect(result.montoDescMarca).toBe(350)
       expect(result.montoDescGeneral).toBe(570)
-      expect(result.total).toBe(2080)
+      expect(result.montoDescMarca).toBe(283.5)
+      expect(result.total).toBe(2146.5)
     })
 
     it('debería calcular correctamente cuando ningún producto tiene descuento por marca', () => {

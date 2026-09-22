@@ -619,7 +619,8 @@ export default function PedidoDetail() {
                 const itemName = String(item['Nombre (más alla de si es item o nombre)'] || item['Nombre item'] || '')
                 const itemMarca = getBrandName(item)
                 const title = (itemMarca && !itemName.toLowerCase().includes(itemMarca.toLowerCase())) ? `${itemName} - ${itemMarca}` : itemName
-                const itemDescPct = parseCurrency((item.Descuento !== undefined && item.Descuento !== null && Number(item.Descuento) > 0) ? item.Descuento : getMarcaDiscount(item, descuentosMarca))
+                const rawDesc = item.PORCENT !== undefined && item.PORCENT !== null ? item.PORCENT : item.Descuento
+                const itemDescPct = parseCurrency((rawDesc !== undefined && rawDesc !== null && Number(rawDesc) > 0 && Number(rawDesc) <= 100) ? rawDesc : getMarcaDiscount(item, descuentosMarca))
 
                 // Stock actual — solo mostrar en estados borrador (0 y 0.0)
                 const isBorrador = ['0', '0.', '0.0'].includes(String(pedido.Estado))
@@ -699,11 +700,6 @@ export default function PedidoDetail() {
                         <p className="text-[9px] font-bold text-slate-400 tabular-nums">
                           {formatCurrency(price)} / ud
                         </p>
-                        {itemDescPct > 0 && (
-                          <span className="text-[9px] font-extrabold text-amber-700 block mt-0.5">
-                            Desc. Marca ({itemDescPct}%): -{formatCurrency((price * qty) * (itemDescPct / 100))}
-                          </span>
-                        )}
                       </div>
                     </div>
                   </div>

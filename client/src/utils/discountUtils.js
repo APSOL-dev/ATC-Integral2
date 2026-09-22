@@ -106,9 +106,12 @@ export function getMarcaDiscount(marcaOrObj, descuentosMarca) {
 /**
  * Calcula los totales de un pedido desglosando los descuentos por marca y el descuento general.
  * 
- * Regla de negocio:
- * - Los artículos con descuento específico por marca aplican ese % sobre su subtotal bruto.
- * - El Descuento General (% del pedido) aplica ÚNICAMENTE sobre la suma de subtotales de artículos SIN descuento por marca.
+ * Regla de negocio (Opción 2 — En Cascada / Escalonado):
+ * - El Descuento General (19%) aplica sobre el 100% de los productos del pedido (Subtotal Bruto).
+ * - Los artículos con descuento específico por marca aplican ese % sobre el importe con el descuento general ya aplicado:
+ *   Base con 19% = Subtotal Bruto del ítem * (1 - generalDiscPct / 100)
+ *   Monto Desc. Marca = Base con 19% * (itemDescPct / 100)
+ * - El Total Neto Final = Subtotal Bruto - Descuento General (19%) - Descuento por Marca
  *
  * @param {Array} items Lista de ítems del pedido
  * @param {number|string} headerDiscount Porcentaje de descuento general del pedido
@@ -121,6 +124,7 @@ export function calculateOrderTotals(items = [], headerDiscount = 19, descuentos
   let totalUnidades = 0
 
   const generalDiscPct = parseCurrency(headerDiscount)
+  const generalMultiplier = Math.max(0, 1 - (generalDiscPct / 100))
 
   items.forEach(item => {
     const precio = parseCurrency(item.Precio)
@@ -131,17 +135,20 @@ export function calculateOrderTotals(items = [], headerDiscount = 19, descuentos
 
     // Verificar si el ítem tiene descuento asignado por marca
     const itemMarca = getBrandName(item)
-    const itemDescPct = parseCurrency((item.Descuento !== undefined && item.Descuento !== null && Number(item.Descuento) > 0) ? item.Descuento : getMarcaDiscount(itemMarca, descuentosMarca))
+    const rawDesc = item.PORCENT !== undefined && item.PORCENT !== null ? item.PORCENT : item.Descuento
+    const itemDescPct = parseCurrency((rawDesc !== undefined && rawDesc !== null && Number(rawDesc) > 0 && Number(rawDesc) <= 100) ? rawDesc : getMarcaDiscount(itemMarca, descuentosMarca))
 
     if (itemDescPct > 0) {
-      const descMarcaLine = brutoLine * (itemDescPct / 100)
+      // Opción 2: El descuento de marca aplica sobre el precio con el descuento general ya aplicado
+      const baseConDescGeneral = brutoLine * generalMultiplier
+      const descMarcaLine = baseConDescGeneral * (itemDescPct / 100)
       montoDescMarca += descMarcaLine
     }
   })
 
   // Regla de negocio: El Descuento General (19%) aplica sobre el 100% de los productos del pedido (subtotalBruto)
   const montoDescGeneral = subtotalBruto * (generalDiscPct / 100)
-  const total = subtotalBruto - montoDescMarca - montoDescGeneral
+  const total = subtotalBruto - montoDescGeneral - montoDescMarca
 
   return {
     subtotalBruto,
