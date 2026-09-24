@@ -731,50 +731,47 @@ router.put('/:id', async (req, res, next) => {
       };
     });
     
-    if (dbPedido) {
-      const mappedDbHeader = mapDbPedidoToSheetFormat(dbPedido);
-      const updatedPedido = {
-        ...mappedDbHeader,
-        ...header,
-        IDPedido: pedidoId,
-        'Fecha_Ultima_Modificacion': now.toISOString()
-      };
-      
-      await withRetry(() => mssqlService.updatePedidoInDB(pedidoId, updatedPedido, newDetailRows));
-      await supabaseService.updateRows('atc_pedidos_v', { IDPedido: pedidoId }, updatedPedido);
-      invalidatePedidosCache();
-      return res.json({ message: 'Pedido en Base de Datos actualizado exitosamente' });
-    }
-    
-    const existingPedidos = await supabaseService.getRows('atc_pedidos_v');
+    const existingPedidos = await supabaseService.getRows('atc_pedidos_v').catch(() => []);
     const existingPedido = existingPedidos.find(p => String(p.IDPedido) === String(pedidoId));
     
-    if (!existingPedido) return res.status(404).json({ message: 'Pedido no encontrado' });
-    
-    const rawUpdated = {
-      ...existingPedido,
-      ...header,
-      IDPedido: pedidoId,
-      'Fecha_Ultima_Modificacion': now.toISOString()
-    };
+    if (!dbPedido && !existingPedido) {
+      return res.status(404).json({ message: 'Pedido no encontrado' });
+    }
     
     const validColumns = new Set([
       'IDPedido', 'Cliente', 'Cliente en BD?', 'Fecha y hora', 'Dirección cliente',
       'Nombre', 'Razón social (NO BD)', 'Celular de contacto', 'Porcentaje de descuento (%)',
       'Observaciones', 'Emitido por', 'Emitido por con fecha', 'Emitido Fecha',
-      'Lugar de entrega', 'Deposito que prepara', 'Fecha de envio', 'Creado por',
-      'Total', 'Fecha_Ultima_Modificacion', 'Fecha y Hora de Última Modificación',
+      'Lugar de entrega', 'Deposito que prepara', 'Fecha de envio', 'Fecha de envío',
+      'Creado por', 'Total', 'Fecha_Ultima_Modificacion', 'Fecha y Hora de Última Modificación',
       'Estado', 'Vendedor', 'Nro_PedidoGestion', 'Nro_PedidoReferencia'
     ]);
-    
+
+    const baseSource = existingPedido || (dbPedido ? mapDbPedidoToSheetFormat(dbPedido) : {});
+    const rawUpdated = {
+      ...baseSource,
+      ...header,
+      IDPedido: pedidoId,
+      'Fecha_Ultima_Modificacion': now.toISOString()
+    };
+
     const updatedPedido = {};
     Object.keys(rawUpdated).forEach(k => {
       if (validColumns.has(k)) {
         updatedPedido[k] = rawUpdated[k];
       }
     });
-    
-    await supabaseService.updateRows('atc_pedidos_v', { IDPedido: pedidoId }, updatedPedido);
+
+    if (dbPedido) {
+      await withRetry(() => mssqlService.updatePedidoInDB(pedidoId, updatedPedido, newDetailRows));
+    }
+
+    if (existingPedido) {
+      await supabaseService.updateRows('atc_pedidos_v', { IDPedido: pedidoId }, updatedPedido);
+    } else {
+      await supabaseService.insertRows('atc_pedidos_v', [updatedPedido]);
+    }
+
     await supabaseService.deleteRows('atc_detalles_pedidos_v', { IDPedido: pedidoId });
     if (newDetailRows.length > 0) {
       const validDetailColumns = new Set([

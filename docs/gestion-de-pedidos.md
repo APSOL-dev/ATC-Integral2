@@ -59,11 +59,15 @@ Permite la emisión, visualización y edición de los pedidos y presupuestos en 
 - **Bloqueo Preventivo de Envío a BD:** Al intentar cambiar el estado de un pedido a `'1'` ("Confirmar / Enviar a BD"), el servidor valida que el pedido tenga al menos 1 renglón cargado. Si carece de detalles, el envío es rechazado inmediatamente con error HTTP 400.
   - *Verificado por:* [pedidos_detalles_safety.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/server/test/pedidos_detalles_safety.test.js)
 - **Autoreparación de Renglones en SQL Server:** Si la cabecera de un pedido ya existe en SQL Server (`PedidoAppCabe`) pero su desglose en `PedidoAppDeta` se encuentra totalmente vacío, la sincronización reinserta automáticamente los detalles faltantes en lugar de omitir la operación.
+- **Edición y Upsert Seguro de Presupuestos 0.0 (`PUT /api/pedidos/:id`):** Al editar un pedido o presupuesto derivado de SQL Server (como los pedidos en Estado `0.0`) que aún no había sido insertado en Supabase, el backend realiza automáticamente un `upsert` (inserción de cabecera y reemplazo sincronizado de renglones en `atc_pedidos_v` y `atc_detalles_pedidos_v`) además de actualizar `AppTransacciones.PedidoAppCabe` y `PedidoAppDeta`. Si el pedido ya existía en Supabase, se actualiza mediante `updateRows` habitual.
+  - *Verificado por:* [pedidos_edit_upsert.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/server/test/pedidos_edit_upsert.test.js)
 
 ---
 
 ## Casos borde conocidos
 
+- **Edición de Pedido Derivado 0.0 sin Registro Previo en Supabase:** Al editar cantidades o productos de un pedido generado en SQL Server que carece de fila en `atc_pedidos_v`, el backend no rechaza la petición con 404 sino que inserta la cabecera y renglones en Supabase garantizando persistencia y consistencia en ambas bases.
+  - *Verificado por:* [pedidos_edit_upsert.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/server/test/pedidos_edit_upsert.test.js)
 - **Intento de Envío sin Cliente:** Al presionar "Generar Pedido" sin seleccionar un cliente, el formulario bloquea el envío y muestra la alerta del navegador `"Seleccione un cliente"`.
   - *Verificado por:* [PedidoForm.test.jsx](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/client/src/pages/pedidos/PedidoForm.test.jsx)
 - **Intento de Enviar Pedido sin Detalles a BD:** Si un borrador no posee artículos asociados e intenta confirmarse (estado 1), la API devuelve un código de estado `400 Bad Request` indicando que no se puede enviar un pedido sin detalles.

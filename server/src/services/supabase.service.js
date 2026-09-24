@@ -32,7 +32,7 @@ const ALLOWED_COLUMNS_BY_VIEW = {
     'Observaciones', 'Emitido por', 'Emitido por con fecha', 'Emitido Fecha',
     'Lugar de entrega', 'Deposito que prepara', 'Fecha de envio', 'Fecha de envío',
     'Creado por', 'Total', 'Fecha_Ultima_Modificacion', 'Fecha y Hora de Última Modificación',
-    'Estado', 'Vendedor', 'Nro_PedidoGestion', 'Nro_PedidoReferencia'
+    'Estado', 'Vendedor'
   ]),
   atc_detalles_pedidos_v: new Set([
     'IDDetalle', 'IDPedido', 'Codigo (más alla de si es item o nombre)',
@@ -44,7 +44,7 @@ const ALLOWED_COLUMNS_BY_VIEW = {
 };
 
 const INTEGER_COLUMNS = new Set([
-  'Cliente', 'Vendedor', 'Nro_PedidoGestion', 'Nro_PedidoReferencia', 'NRO_VENDEDOR', 'Intentos fallidos'
+  'Cliente', 'Vendedor', 'NRO_VENDEDOR', 'Intentos fallidos'
 ]);
 
 const NUMERIC_COLUMNS = new Set([
