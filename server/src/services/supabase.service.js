@@ -101,15 +101,17 @@ async function getRows(viewName) {
   let page = 0;
   const pageSize = 1000;
   const lowerTableName = tableName.toLowerCase();
-  const orderCol = lowerTableName.includes('detalles')
+  const isDetalles = lowerTableName.includes('detalles');
+  const orderCol = isDetalles
     ? 'IDDetalle'
     : (lowerTableName.includes('usuarios') ? 'Nombre de usuario' : 'IDPedido');
+  const isAscending = isDetalles;
 
   while (true) {
     const { data, error } = await supabase
       .from(tableName)
       .select('*')
-      .order(orderCol, { ascending: false })
+      .order(orderCol, { ascending: isAscending })
       .range(page * pageSize, (page + 1) * pageSize - 1);
 
     if (error) {

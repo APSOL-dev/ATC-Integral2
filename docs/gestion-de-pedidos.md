@@ -61,6 +61,8 @@ Permite la emisión, visualización y edición de los pedidos y presupuestos en 
 - **Autoreparación de Renglones en SQL Server:** Si la cabecera de un pedido ya existe en SQL Server (`PedidoAppCabe`) pero su desglose en `PedidoAppDeta` se encuentra totalmente vacío, la sincronización reinserta automáticamente los detalles faltantes en lugar de omitir la operación.
 - **Edición y Upsert Seguro de Presupuestos 0.0 (`PUT /api/pedidos/:id`):** Al editar un pedido o presupuesto derivado de SQL Server (como los pedidos en Estado `0.0`) que aún no había sido insertado en Supabase, el backend realiza automáticamente un `upsert` (inserción de cabecera y reemplazo sincronizado de renglones en `atc_pedidos_v` y `atc_detalles_pedidos_v`) además de actualizar `AppTransacciones.PedidoAppCabe` y `PedidoAppDeta`. Si el pedido ya existía en Supabase, se actualiza mediante `updateRows` habitual.
   - *Verificado por:* [pedidos_edit_upsert.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/server/test/pedidos_edit_upsert.test.js)
+- **Preservación de Renglones Editados al Recargar y Orden Secuencial Ascendente:** Al recargar la aplicación o consultar el endpoint de pedidos, el unificador respeta los renglones editados de Supabase evitando que un pedido derivado vuelva a tomar los valores del pedido base antiguo. Asimismo, la consulta y mezcla de renglones aplica ordenamiento ascendente (`IDDetalle ASC`), garantizando que los artículos conserven su orden correlativo original y no se desplacen de posición.
+  - *Verificado por:* [pedidos_detalles_order_and_persistence.test.js](file:///c:/Users/Renata%20Morano/OneDrive/Documentos/Antigravity/ATC%20Migraci%C3%B3n/server/test/pedidos_detalles_order_and_persistence.test.js)
 
 ---
 

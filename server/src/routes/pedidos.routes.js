@@ -314,7 +314,8 @@ async function getCompletePedidos() {
     if (p['Fecha de envio']) p['Fecha de envio'] = formatDate(p['Fecha de envio'], 'FULL');
 
     const id = String(p.IDPedido);
-    const details = supabaseDetailsByPedido[id] || [];
+    const details = (supabaseDetailsByPedido[id] || []).slice();
+    details.sort((a, b) => String(a.IDDetalle || '').localeCompare(String(b.IDDetalle || ''), undefined, { numeric: true }));
     details.forEach(d => {
       const code = String(d['Codigo (más alla de si es item o nombre)'] || d['Item  codigo'] || '').trim().toLowerCase();
       d.Proveedor = productProviderMap.get(code) || '—';
@@ -326,7 +327,24 @@ async function getCompletePedidos() {
 
   mappedDbPedidos.forEach(p => {
     const id = String(p.IDPedido);
-    const details = dbDetailsByPedido[id] || [];
+    const existingSupabaseOrder = pedidosMap.get(id);
+    let details = (dbDetailsByPedido[id] || []).slice();
+    
+    // Si SQL Server no tiene renglones propios pero Supabase sí tiene renglones guardados (ej. pedido editado)
+    if ((!details || details.length === 0) && existingSupabaseOrder && existingSupabaseOrder.detalles && existingSupabaseOrder.detalles.length > 0) {
+      details = existingSupabaseOrder.detalles;
+      if (existingSupabaseOrder.Total !== undefined && existingSupabaseOrder.Total !== null) {
+        p.Total = existingSupabaseOrder.Total;
+      }
+      if (existingSupabaseOrder.Observaciones) {
+        p.Observaciones = existingSupabaseOrder.Observaciones;
+      }
+      if (existingSupabaseOrder['Porcentaje de descuento (%)'] !== undefined) {
+        p['Porcentaje de descuento (%)'] = existingSupabaseOrder['Porcentaje de descuento (%)'];
+      }
+    }
+
+    details.sort((a, b) => String(a.IDDetalle || '').localeCompare(String(b.IDDetalle || ''), undefined, { numeric: true }));
     details.forEach(d => {
       const code = String(d['Codigo (más alla de si es item o nombre)'] || d['Item  codigo'] || '').trim().toLowerCase();
       d.Proveedor = productProviderMap.get(code) || '—';
