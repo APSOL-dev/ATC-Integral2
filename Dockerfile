@@ -1,5 +1,5 @@
 # Step 1: Build the frontend client
-FROM node:22-alpine AS client-builder
+FROM node:22-slim AS client-builder
 WORKDIR /client
 COPY client/package*.json ./
 RUN npm ci
@@ -9,7 +9,7 @@ ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Step 2: Build and run the backend server serving the frontend statically
-FROM node:22-alpine
+FROM node:22-slim
 WORKDIR /app
 COPY server/package*.json ./
 RUN npm ci --only=production

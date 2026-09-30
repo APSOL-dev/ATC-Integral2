@@ -7,6 +7,7 @@ const assert = require('node:assert/strict');
 const jwt = require('jsonwebtoken');
 
 // Definir el secreto ANTES de importar el middleware para que process.env esté disponible
+process.env.NODE_ENV = 'test';
 const TEST_SECRET = 'test-jwt-secret-para-suite-de-tests';
 process.env.JWT_SECRET = TEST_SECRET;
 

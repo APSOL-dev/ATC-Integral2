@@ -1,5 +1,11 @@
 const sql = require('mssql');
+const dns = require('dns');
 require('dotenv').config();
+
+// Ensure Node.js resolves IPv4 addresses first (avoids IPv6 hanging timeouts with DDNS)
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder('ipv4first');
+}
 
 const config = {
   user: process.env.MSSQL_USER,
@@ -7,16 +13,20 @@ const config = {
   server: process.env.MSSQL_HOST,
   port: parseInt(process.env.MSSQL_PORT, 10),
   database: process.env.MSSQL_DATABASE,
+  connectionTimeout: 30000,
+  requestTimeout: 60000,
   options: {
     encrypt: false,
     trustServerCertificate: true,
+    enableArithAbort: true,
+    connectTimeout: 30000,
     requestTimeout: 60000,
-    connectionTimeout: 60000,
   },
   pool: {
     max: 10,
     min: 0,
-    idleTimeoutMillis: 30000
+    idleTimeoutMillis: 30000,
+    acquireTimeoutMillis: 30000,
   }
 };
 
@@ -46,6 +56,16 @@ async function getOrConnectPool() {
       console.log('✅ Connected to MSSQL (Casa29)');
       activePool = pool;
       connectionPromise = null;
+
+      // Reset pool on connection errors or broken sockets so next request reconnects automatically
+      pool.on('error', err => {
+        console.warn('⚠️ MSSQL Pool Error (resetting active pool for auto-reconnect):', err.message);
+        try { pool.close(); } catch (e) {}
+        if (activePool === pool) {
+          activePool = null;
+        }
+      });
+
       return pool;
     })
     .catch(err => {
@@ -69,5 +89,14 @@ getOrConnectPool().catch(() => {});
 
 module.exports = {
   sql,
-  poolPromise
+  config,
+  poolPromise,
+  getOrConnectPool,
+  resetPool: () => {
+    if (activePool) {
+      try { activePool.close(); } catch (e) {}
+      activePool = null;
+    }
+    connectionPromise = null;
+  }
 };
