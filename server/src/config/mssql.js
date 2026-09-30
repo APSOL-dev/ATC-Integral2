@@ -1,5 +1,6 @@
 const sql = require('mssql');
 const dns = require('dns');
+const { Resolver } = require('dns').promises;
 require('dotenv').config();
 
 // Ensure Node.js resolves IPv4 addresses first (avoids IPv6 hanging timeouts with DDNS)
@@ -30,6 +31,49 @@ const config = {
   }
 };
 
+// Helper to proactively resolve DDNS hostnames directly via public DNS (Google/Cloudflare)
+// to bypass Docker / VPS local DNS proxy limitations with CNAME chains
+async function resolveHostToIp(hostname) {
+  if (!hostname) return hostname;
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) return hostname;
+
+  // 1. Try system DNS lookup
+  try {
+    const res = await dns.promises.lookup(hostname, { family: 4 });
+    if (res && res.address) {
+      return res.address;
+    }
+  } catch (err) {
+    // Continue to public DNS fallback
+  }
+
+  // 2. Try public DNS (Google 8.8.8.8 / Cloudflare 1.1.1.1)
+  try {
+    const publicResolver = new Resolver();
+    publicResolver.setServers(['8.8.8.8', '1.1.1.1', '8.8.4.4']);
+    const ips = await publicResolver.resolve4(hostname);
+    if (ips && ips.length > 0) {
+      return ips[0];
+    }
+  } catch (err) {
+    // Continue to DDNS fallback
+  }
+
+  // 3. Fallback specifically for ATC dynamic DNS chain
+  if (hostname === 'sj.atodocolor.com.ar' || hostname === 'atc.fw-precixo.com.ar') {
+    try {
+      const publicResolver = new Resolver();
+      publicResolver.setServers(['8.8.8.8', '1.1.1.1']);
+      const ips = await publicResolver.resolve4('oficinapuerto01.ddns.net');
+      if (ips && ips.length > 0) {
+        return ips[0];
+      }
+    } catch (e) {}
+  }
+
+  return hostname;
+}
+
 let activePool = null;
 let connectionPromise = null;
 
@@ -49,11 +93,22 @@ async function getOrConnectPool() {
     }
   }
 
-  console.log('🔄 Attempting to connect to MSSQL...');
-  connectionPromise = new sql.ConnectionPool(config)
+  const targetHost = process.env.MSSQL_HOST || 'sj.atodocolor.com.ar';
+  const targetPort = parseInt(process.env.MSSQL_PORT, 10) || 8888;
+  const resolvedIp = await resolveHostToIp(targetHost);
+
+  console.log(`🔄 Attempting to connect to MSSQL (${resolvedIp}:${targetPort})...`);
+
+  const dynamicConfig = {
+    ...config,
+    server: resolvedIp,
+    port: targetPort,
+  };
+
+  connectionPromise = new sql.ConnectionPool(dynamicConfig)
     .connect()
     .then(pool => {
-      console.log('✅ Connected to MSSQL (Casa29)');
+      console.log(`✅ Connected to MSSQL (Casa29 at ${resolvedIp})`);
       activePool = pool;
       connectionPromise = null;
 
@@ -91,6 +146,7 @@ module.exports = {
   config,
   poolPromise,
   getOrConnectPool,
+  resolveHostToIp,
   resetPool: () => {
     if (activePool) {
       try { activePool.close(); } catch (e) {}

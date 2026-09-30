@@ -34,4 +34,12 @@ describe('MSSQL Config & Pool Resilience Suite', () => {
       mssqlService.clearMssqlCache();
     });
   });
+
+  test('resolveHostToIp resuelve IP válida o devuelve la IP cruda', async () => {
+    assert.strictEqual(typeof mssqlConfig.resolveHostToIp, 'function');
+    const rawIp = await mssqlConfig.resolveHostToIp('127.0.0.1');
+    assert.strictEqual(rawIp, '127.0.0.1');
+    const resolved = await mssqlConfig.resolveHostToIp('sj.atodocolor.com.ar');
+    assert.match(resolved, /^\d+\.\d+\.\d+\.\d+$/);
+  });
 });
