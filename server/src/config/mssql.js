@@ -57,11 +57,10 @@ async function getOrConnectPool() {
       activePool = pool;
       connectionPromise = null;
 
-      // Reset pool on connection errors or broken sockets so next request reconnects automatically
+      // Handle individual connection errors without destroying the entire healthy pool
       pool.on('error', err => {
-        console.warn('⚠️ MSSQL Pool Error (resetting active pool for auto-reconnect):', err.message);
-        try { pool.close(); } catch (e) {}
-        if (activePool === pool) {
+        console.warn('⚠️ MSSQL Pool socket warning (auto-managed by pool):', err.message);
+        if (pool && !pool.connected) {
           activePool = null;
         }
       });
