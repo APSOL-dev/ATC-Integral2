@@ -25,4 +25,13 @@ describe('MSSQL Config & Pool Resilience Suite', () => {
       mssqlConfig.resetPool();
     });
   });
+
+  test('mssqlService exporta clearMssqlCache y getClientesByMultipleIds', () => {
+    const mssqlService = require('../src/services/mssql.service');
+    assert.strictEqual(typeof mssqlService.clearMssqlCache, 'function');
+    assert.strictEqual(typeof mssqlService.getClientesByMultipleIds, 'function');
+    assert.doesNotThrow(() => {
+      mssqlService.clearMssqlCache();
+    });
+  });
 });

@@ -113,26 +113,108 @@ async function executeWithRetry(fn, retries = 3, delayMs = 1000) {
   throw new Error(`Fallo de conexión con SQL Server tras ${retries} reintentos: ${lastError?.message || 'Servidor no disponible'}`);
 }
 
-async function getClientes(search = '') {
+const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutos
+
+let clientesCache = { data: null, timestamp: 0, inFlight: null };
+let productosCache = { data: null, timestamp: 0, inFlight: null };
+let vendedoresCache = { data: null, timestamp: 0, inFlight: null };
+
+async function fetchClientesRaw() {
   return executeWithRetry(async () => {
     const pool = await getPool();
-    let query = 'SELECT NRO_CLIENTE, NOMBRE_CLIENTE, CUIT, SALDO, VENDEDOR, NRO_VENDEDOR, LOCALIDAD, PROVINCIA, TELE FROM App.ClientesMay';
-    if (search) {
-      const s = search.replace(/'/g, "''");
-      query = `SELECT NRO_CLIENTE, NOMBRE_CLIENTE, CUIT, SALDO, VENDEDOR, NRO_VENDEDOR, LOCALIDAD, PROVINCIA, TELE 
-               FROM App.ClientesMay 
-               WHERE NOMBRE_CLIENTE LIKE '%${s}%' 
-                  OR CAST(NRO_CLIENTE AS VARCHAR) LIKE '%${s}%'
-               ORDER BY NOMBRE_CLIENTE`;
-    } else {
-      query += ' ORDER BY NOMBRE_CLIENTE';
-    }
-    const result = await pool.request().query(query);
-    return result.recordset;
+    const result = await pool.request().query(
+      'SELECT NRO_CLIENTE, NOMBRE_CLIENTE, CUIT, SALDO, VENDEDOR, NRO_VENDEDOR, LOCALIDAD, PROVINCIA, TELE FROM App.ClientesMay ORDER BY NOMBRE_CLIENTE'
+    );
+    return result.recordset || [];
   });
 }
 
+async function getAllClientesCached(force = false) {
+  const now = Date.now();
+  if (!force && clientesCache.data && (now - clientesCache.timestamp < CACHE_TTL_MS)) {
+    return clientesCache.data;
+  }
+
+  if (clientesCache.inFlight) {
+    return clientesCache.inFlight;
+  }
+
+  clientesCache.inFlight = fetchClientesRaw()
+    .then(data => {
+      clientesCache.data = data;
+      clientesCache.timestamp = Date.now();
+      clientesCache.inFlight = null;
+      return data;
+    })
+    .catch(err => {
+      clientesCache.inFlight = null;
+      if (clientesCache.data && clientesCache.data.length > 0) {
+        console.warn('⚠️ Fallo consulta en vivo de Clientes SQL, usando caché en memoria:', err.message);
+        return clientesCache.data;
+      }
+      throw err;
+    });
+
+  return clientesCache.inFlight;
+}
+
+async function fetchProductosRaw() {
+  return executeWithRetry(async () => {
+    const pool = await getPool();
+    const result = await pool.request().query(
+      'SELECT CODART, DESCRI, CC_CIVA, stock, FAMILIA, NombreFamilia, RUBRO, NombreRubro, MARCA, NombreMarca, Embalaje, Proveedor FROM App.Productos ORDER BY DESCRI'
+    );
+    return result.recordset || [];
+  });
+}
+
+async function getAllProductosCached(force = false) {
+  const now = Date.now();
+  if (!force && productosCache.data && (now - productosCache.timestamp < CACHE_TTL_MS)) {
+    return productosCache.data;
+  }
+
+  if (productosCache.inFlight) {
+    return productosCache.inFlight;
+  }
+
+  productosCache.inFlight = fetchProductosRaw()
+    .then(data => {
+      productosCache.data = data;
+      productosCache.timestamp = Date.now();
+      productosCache.inFlight = null;
+      return data;
+    })
+    .catch(err => {
+      productosCache.inFlight = null;
+      if (productosCache.data && productosCache.data.length > 0) {
+        console.warn('⚠️ Fallo consulta en vivo de Productos SQL, usando caché en memoria:', err.message);
+        return productosCache.data;
+      }
+      throw err;
+    });
+
+  return productosCache.inFlight;
+}
+
+async function getClientes(search = '') {
+  const all = await getAllClientesCached();
+  if (!search) return all;
+  const term = String(search).toLowerCase().trim();
+  return all.filter(c => 
+    (c.NOMBRE_CLIENTE && String(c.NOMBRE_CLIENTE).toLowerCase().includes(term)) ||
+    (c.NRO_CLIENTE != null && String(c.NRO_CLIENTE).includes(term)) ||
+    (c.CUIT && String(c.CUIT).includes(term))
+  );
+}
+
 async function getClienteById(id) {
+  if (id == null) return null;
+  const all = await getAllClientesCached().catch(() => null);
+  if (all && all.length > 0) {
+    const found = all.find(c => String(c.NRO_CLIENTE) === String(id));
+    if (found) return found;
+  }
   return executeWithRetry(async () => {
     const pool = await getPool();
     const result = await pool.request()
@@ -143,29 +225,27 @@ async function getClienteById(id) {
 }
 
 async function getProductos(search = '') {
-  return executeWithRetry(async () => {
-    const pool = await getPool();
-    let query;
-    if (search) {
-      const s = search.replace(/'/g, "''");
-      query = `SELECT CODART, DESCRI, CC_CIVA, stock, FAMILIA, NombreFamilia, RUBRO, NombreRubro, MARCA, NombreMarca, Embalaje, Proveedor 
-               FROM App.Productos 
-               WHERE DESCRI LIKE '%${s}%' 
-                  OR CAST(CODART AS VARCHAR) LIKE '%${s}%'
-               ORDER BY DESCRI`;
-    } else {
-      query = 'SELECT CODART, DESCRI, CC_CIVA, stock, FAMILIA, NombreFamilia, RUBRO, NombreRubro, MARCA, NombreMarca, Embalaje, Proveedor FROM App.Productos ORDER BY DESCRI';
-    }
-    const result = await pool.request().query(query);
-    return result.recordset;
-  });
+  const all = await getAllProductosCached();
+  if (!search) return all;
+  const term = String(search).toLowerCase().trim();
+  return all.filter(p => 
+    (p.DESCRI && String(p.DESCRI).toLowerCase().includes(term)) ||
+    (p.CODART != null && String(p.CODART).includes(term))
+  );
 }
 
 async function getVendedores() {
+  const now = Date.now();
+  if (vendedoresCache.data && (now - vendedoresCache.timestamp < CACHE_TTL_MS * 3)) {
+    return vendedoresCache.data;
+  }
   return executeWithRetry(async () => {
     const pool = await getPool();
     const result = await pool.request().query('SELECT TOP 100 * FROM App.Vendedores ORDER BY NOMBRE');
-    return result.recordset;
+    const data = result.recordset || [];
+    vendedoresCache.data = data;
+    vendedoresCache.timestamp = Date.now();
+    return data;
   });
 }
 
@@ -502,6 +582,12 @@ async function deletePedidoFromDB(idPedido) {
 
 async function getClientesByMultipleIds(ids) {
   if (!Array.isArray(ids) || ids.length === 0) return [];
+  const idSet = new Set(ids.map(String));
+  const all = await getAllClientesCached().catch(() => null);
+  if (all && all.length > 0) {
+    const matched = all.filter(c => idSet.has(String(c.NRO_CLIENTE)));
+    if (matched.length > 0) return matched;
+  }
   return executeWithRetry(async () => {
     const pool = await getPool();
     const request = pool.request();
@@ -512,8 +598,14 @@ async function getClientesByMultipleIds(ids) {
     });
     const query = `SELECT * FROM App.ClientesMay WHERE NRO_CLIENTE IN (${inputNames.join(',')})`;
     const result = await request.query(query);
-    return result.recordset;
+    return result.recordset || [];
   });
+}
+
+function clearMssqlCache() {
+  clientesCache = { data: null, timestamp: 0, inFlight: null };
+  productosCache = { data: null, timestamp: 0, inFlight: null };
+  vendedoresCache = { data: null, timestamp: 0, inFlight: null };
 }
 
 module.exports = {
@@ -527,5 +619,6 @@ module.exports = {
   createPedidoInDB,
   updatePedidoEstadoInDB,
   deletePedidoFromDB,
-  updatePedidoInDB
+  updatePedidoInDB,
+  clearMssqlCache
 };

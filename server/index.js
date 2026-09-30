@@ -14,17 +14,20 @@ const startServer = (portToTry) => {
     console.log(`📊 Google Sheets ID: ${process.env.SPREADSHEET_ID}`);
     console.log(`🗄️  MSSQL Host: ${process.env.MSSQL_HOST}:${process.env.MSSQL_PORT}`);
 
-    // Pre-warm Supabase cache so first user request is instant
+    // Pre-warm Supabase and MSSQL cache so first user request is instant
     try {
       const supabaseService = require('./src/services/supabase.service');
-      console.log('🔥 Pre-warming Supabase cache...');
-      await Promise.all([
+      const mssqlService = require('./src/services/mssql.service');
+      console.log('🔥 Pre-warming Supabase and MSSQL caches...');
+      await Promise.allSettled([
         supabaseService.getRows('atc_pedidos_v'),
         supabaseService.getRows('atc_detalles_pedidos_v'),
+        mssqlService.getClientes(),
+        mssqlService.getProductos()
       ]);
-      console.log('✅ Supabase cache warm-up complete');
+      console.log('✅ Supabase & MSSQL cache warm-up complete');
     } catch (err) {
-      console.warn('⚠️  Supabase cache warm-up failed (will load on first request):', err.message);
+      console.warn('⚠️  Cache warm-up error (will load on first request):', err.message);
     }
   });
 
